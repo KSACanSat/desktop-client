@@ -1,5 +1,6 @@
 from tkinter import *
 from serial_comm import SerialManager
+from result_table import ResultTable
 
 
 class App:
@@ -8,18 +9,15 @@ class App:
         self.last_time = 0
         # MAIN WINDOW SETUP
         self.root = Tk()
-        self.root.geometry = "600x800"
+        self.root.geometry("600x800")
         # GUI SETUP
-        self.scrollbar = Scrollbar(self.root)
-        self.scrollbar.pack(side=RIGHT, fill=Y)
-        self.info_box = Listbox(self.root, yscrollcommand=self.scrollbar.set)
-        self.info_box.pack(side=LEFT, fill=BOTH)
-        self.scrollbar.config(command=self.info_box.yview)
+        self.table = ResultTable(self.root, {"time": "Idő", "sensor1": "1. műszer"}, "time")
+        self.table.pack()
 
     def query_serial(self):
         message = self.serial.get()
         if self.last_time != message["time"]:
-            self.info_box.insert(0, message)
+            self.table.add_data(message)
             self.last_time = message["time"]
         self.root.after(200, self.query_serial)
 
