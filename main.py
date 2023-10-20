@@ -1,11 +1,11 @@
 from tkinter import *
 from serial_comm import SerialManager
-from time import sleep
 
 
 class App:
     def __init__(self):
         self.serial = SerialManager("COM8", 9600)
+        self.last_time = 0
         # MAIN WINDOW SETUP
         self.root = Tk()
         self.root.geometry = "600x800"
@@ -18,8 +18,10 @@ class App:
 
     def query_serial(self):
         message = self.serial.get()
-        self.info_box.insert(END, message)
-        self.root.after(10, self.query_serial)
+        if self.last_time != message["time"]:
+            self.info_box.insert(0, message)
+            self.last_time = message["time"]
+        self.root.after(200, self.query_serial)
 
     def show(self):
         self.query_serial()
