@@ -1,6 +1,6 @@
-from tkinter import *
 from serial_comm import SerialManager
-from result_table import ResultTable
+from screens import *
+from tkinter import Tk, TclError
 
 
 class App:
@@ -11,10 +11,8 @@ class App:
         self.serial = SerialManager("COM8", 9600)
         self.last_time = 0
         # MAIN WINDOW SETUP
-        self.root = Tk()
-        # GUI SETUP
-        self.table = ResultTable(self.root, {"time": "Idő", "sensor1": "1. műszer"}, "time")
-        self.table.pack()
+        self.schedule_window = Tk()
+        self.raw_window = RawInfoScreen(self.stop)
 
     def query_serial(self):
         """
@@ -22,22 +20,29 @@ class App:
         """
         message = self.serial.get()
         if self.last_time != message["time"]:
-            self.table.add_data(message)
+            self.raw_window.add_row(message)
             self.last_time = message["time"]
-        self.root.after(200, self.query_serial)  # Futtatás 0.2 sec múlva
+        self.schedule_window.after(200, self.query_serial)
 
     def show(self):
         """
             Az appot elindító kód
         """
+        self.schedule_window.withdraw()
         self.query_serial()
-        self.root.mainloop()
+        self.raw_window.show()
 
-    def stop(self):
+    def stop(self, close_id):
         """
             A leállító kód
         """
+        try:
+            self.schedule_window.destroy()
+        except TclError:
+            pass
         self.serial.stop()
+        if close_id != "raw_window":
+            self.raw_window.close()
 
 
 if __name__ == "__main__":
@@ -45,4 +50,4 @@ if __name__ == "__main__":
     try:
         app.show()
     finally:
-        app.stop()
+        app.stop("execution")
