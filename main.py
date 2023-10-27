@@ -3,14 +3,27 @@ from screens import *
 from tkinter import Tk, TclError
 
 
-class App:
+class App(object):
+    _instance = None
     """
     A főablak osztálya
     """
+
+    @classmethod
+    def new(cls):
+        if cls._instance is None:
+            cls._instance = App()
+
+    @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            App.new()
+        return cls._instance
+
     def __init__(self):
         self.serial = SerialManager("COM8", 9600)
         self.last_time = 0
-        # MAIN WINDOW SETUP
+        # UI setup
         self.schedule_window = Tk()
         self.raw_window = RawInfoScreen(self.stop)
 
@@ -46,8 +59,7 @@ class App:
 
 
 if __name__ == "__main__":
-    app = App()
     try:
-        app.show()
+        App.get_instance().show()
     finally:
-        app.stop("execution")
+        App.get_instance().stop("execution")
