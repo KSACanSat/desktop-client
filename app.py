@@ -31,7 +31,8 @@ class App(object):
         self.last_time = 0
         # UI setup
         self.schedule_window = Tk()
-        self.raw_window = RawInfoScreen(self.stop)
+        self.welcome_window = WelcomeScreen()
+        self.raw_window = RawInfoScreen(None)
 
     def query_serial(self):
         """
@@ -48,8 +49,9 @@ class App(object):
             Az appot elindító kód
         """
         self.schedule_window.withdraw()
-        self.query_serial()
-        self.raw_window.show()
+        # self.query_serial()
+        self.raw_window.hide()
+        self.welcome_window.start()
 
     def stop(self, close_id):
         """

@@ -14,12 +14,21 @@ class Screen:
         self.root = Tk()
         self.root.protocol("WM_DELETE_WINDOW", self.close)
 
+    def start(self):
+        self.root.mainloop()
+        if not self.visible:
+            self.show()
+
     def show(self):
         """
         Az ablakot megjelenító függvény
         """
         self.visible = True
-        self.root.mainloop()
+        self.root.deiconify()
+
+    def hide(self):
+        self.visible = False
+        self.root.withdraw()
 
     def close(self):
         """
