@@ -1,5 +1,6 @@
 from tkinter import Frame, Entry, CENTER, Button
 from tkinter.ttk import Combobox, Label
+from tkinter.messagebox import showerror
 from screens.screen import Screen
 from PIL.ImageTk import PhotoImage
 from PIL.Image import open
@@ -41,4 +42,12 @@ class WelcomeScreen(Screen):
         self.form_frame.pack()
 
     def connect(self):
-        print("Connectiong...")
+        # get connection params
+        serial_port = self.port_entry.get()
+        baud_rate = self.baud_entry.get()
+        # null check
+        if serial_port is None or serial_port == "":
+            showerror("Csatlakozás", "Nem adtad meg a soros portot!")
+        if baud_rate is None or baud_rate == "":
+            showerror("Csatlakozás", "Nem adtad meg a baud ratet!")
+        # TODO: pass params - next commit
