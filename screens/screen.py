@@ -1,23 +1,18 @@
-from tkinter import Tk, TclError
+from tkinter import TclError, Toplevel
 
 
 class Screen:
     """
     Egy alaposztály a képernyők deklarálásához.
     """
-    def __init__(self, on_close_handler=None):
+    def __init__(self, root_window, on_close_handler=None):
         """
         :param on_close_handler A leállításkor meghívandó egyéb függvény
         """
         self.visible = False
         self.on_close_handler = on_close_handler
-        self.root = Tk()
+        self.root = Toplevel(root_window)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
-
-    def start(self):
-        self.root.mainloop()
-        if not self.visible:
-            self.show()
 
     def show(self):
         """

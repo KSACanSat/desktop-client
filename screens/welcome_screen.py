@@ -1,5 +1,5 @@
-from tkinter import Frame, Entry, CENTER, Button
-from tkinter.ttk import Combobox, Label
+from tkinter import Frame, Entry, CENTER, Button, StringVar
+from tkinter.ttk import Combobox, Label, Progressbar
 from tkinter.messagebox import showerror
 from screens.screen import Screen
 from PIL.ImageTk import PhotoImage
@@ -9,8 +9,9 @@ from PIL.Image import open
 class WelcomeScreen(Screen):
     BAUD_OPTIONS = [300, 600, 1200, 2400, 4800, 9600, 14400, 19200, 28800, 31250, 38400, 57600, 115200]
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, root_wnd, connecting_data_setter):
+        super().__init__(root_wnd)
+        self.connecting_data_setter = connecting_data_setter
         self.root.geometry("500x400")
         self.root.update()
         # Logo part
@@ -46,8 +47,32 @@ class WelcomeScreen(Screen):
         serial_port = self.port_entry.get()
         baud_rate = self.baud_entry.get()
         # null check
+        is_error = False
         if serial_port is None or serial_port == "":
             showerror("Csatlakozás", "Nem adtad meg a soros portot!")
+            is_error = True
         if baud_rate is None or baud_rate == "":
             showerror("Csatlakozás", "Nem adtad meg a baud ratet!")
-        # TODO: pass params - next commit
+            is_error = True
+        if is_error:
+            return
+        # pass params
+        self.connecting_data_setter(serial_port, int(baud_rate))
+
+
+class ConnectingScreen(Screen):
+    def __init__(self, root_wnd):
+        super().__init__(root_wnd)
+        self.data = {}
+        self.completed_responses = 0
+        # UI INIT
+        self.root.geometry("200x50")
+        self.title_text = StringVar(self.root, "")
+        self.title = Label(self.root, textvariable=self.title_text)
+        self.title.pack(anchor=CENTER)
+        self.progressbar = Progressbar(self.root, orient="horizontal", mode="indeterminate", length=180)
+        self.progressbar.pack(anchor=CENTER, pady=10)
+
+    def set_data(self, port, baud):
+        self.data = {"port": port, "baud": baud}
+        self.title_text.set(f"Csatlakozás a {self.data['port']} port eszközéhez...")

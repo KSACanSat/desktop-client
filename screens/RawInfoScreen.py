@@ -7,11 +7,11 @@ class RawInfoScreen(Screen):
     A natúr adatok megjelenítésért felelős osztály
     """
     # noinspection PyMissingConstructor
-    def __init__(self, on_close):
+    def __init__(self, root_wnd, on_close):
         """
         :param on_close Az ablak kilépésekor meghívandó függvény
         """
-        super().__init__(on_close)
+        super().__init__(root_wnd, on_close)
         # GUI SETUP
         self.table = ResultTable(self.root, {"time": "Idő", "sensor1": "1. műszer"}, "time")
         self.table.pack()

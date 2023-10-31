@@ -1,4 +1,5 @@
 from serial_comm import SerialManager
+import tkthread; tkthread.patch()
 from screens import *
 from tkinter import Tk, TclError
 
@@ -31,8 +32,9 @@ class App(object):
         self.last_time = 0
         # UI setup
         self.schedule_window = Tk()
-        self.welcome_window = WelcomeScreen()
-        self.raw_window = RawInfoScreen(None)
+        self.welcome_window = WelcomeScreen(self.schedule_window, self.attempt_connect)
+        self.connect_window = ConnectingScreen(self.schedule_window)
+        self.raw_window = RawInfoScreen(self.schedule_window, self.stop)
 
     def query_serial(self):
         """
@@ -44,6 +46,15 @@ class App(object):
             self.last_time = message["time"]
         self.schedule_window.after(200, self.query_serial)
 
+    def attempt_connect(self, port, baud):
+        print("got datas")
+        self.connect_window.set_data(port, baud)
+        print("set them")
+        self.connect_window.show()
+        print("started connect window")
+        self.connect_window.show()
+        print("called")
+
     def show(self):
         """
             Az appot elindító kód
@@ -51,7 +62,9 @@ class App(object):
         self.schedule_window.withdraw()
         # self.query_serial()
         self.raw_window.hide()
-        self.welcome_window.start()
+        self.connect_window.hide()
+        self.welcome_window.show()
+        self.schedule_window.mainloop()
 
     def stop(self, close_id):
         """
