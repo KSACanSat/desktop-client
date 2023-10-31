@@ -2,6 +2,7 @@ from tkinter import Frame, Entry, CENTER, Button, StringVar
 from tkinter.ttk import Combobox, Label, Progressbar
 from tkinter.messagebox import showerror
 from screens.screen import Screen
+from serial_comm import SerialManager, UnsupportedProtocolError
 from PIL.ImageTk import PhotoImage
 from PIL.Image import open
 
@@ -61,10 +62,14 @@ class WelcomeScreen(Screen):
 
 
 class ConnectingScreen(Screen):
-    def __init__(self, root_wnd):
+    ERRORBOX_TITLE = "KSA Connection Agent: Hiba"
+
+    def __init__(self, root_wnd, on_device_passes):
         super().__init__(root_wnd)
         self.data = {}
+        self.serial_conn = None
         self.completed_responses = 0
+        self.on_device_passes = on_device_passes
         # UI INIT
         self.root.geometry("200x50")
         self.title_text = StringVar(self.root, "")
@@ -76,3 +81,29 @@ class ConnectingScreen(Screen):
     def set_data(self, port, baud):
         self.data = {"port": port, "baud": baud}
         self.title_text.set(f"Csatlakozás a {self.data['port']} port eszközéhez...")
+        self.progressbar.start()
+        self.query_device()
+
+    def query_device(self):
+        if self.serial_conn is None:
+            self.serial_conn = SerialManager(self.data['port'], self.data['baud'])
+        is_error = False
+        try:
+            self.serial_conn.get()
+            self.completed_responses += 1
+        except FileNotFoundError:
+            showerror(ConnectingScreen.ERRORBOX_TITLE, "A megadott porton nem található eszköz!")
+            is_error = True
+        except PermissionError:
+            showerror(ConnectingScreen.ERRORBOX_TITLE, "Programozási hiba történt! Nézd meg a konzolt a részletekért!")
+            is_error = True
+        except UnsupportedProtocolError:
+            showerror(ConnectingScreen.ERRORBOX_TITLE, "Az eszköz ismeretlen protokollt használ! Ellenőrizd, hogy jó portot adtál-e meg!")
+            is_error = True
+        if is_error or self.completed_responses == 5:
+            self.progressbar.stop()
+            self.hide()
+            if not is_error:
+                self.on_device_passes(self.serial_conn)
+            return
+        self.root.after(200, self.query_device)

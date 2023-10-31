@@ -28,13 +28,18 @@ class App(object):
         return cls._instance
 
     def __init__(self):
-        self.serial = SerialManager("COM9", 9600)
+        self.serial = None
         self.last_time = 0
         # UI setup
         self.schedule_window = Tk()
         self.welcome_window = WelcomeScreen(self.schedule_window, self.attempt_connect)
-        self.connect_window = ConnectingScreen(self.schedule_window)
+        self.connect_window = ConnectingScreen(self.schedule_window, self.set_serial_conn)
         self.raw_window = RawInfoScreen(self.schedule_window, self.stop)
+
+    def set_serial_conn(self, serial: SerialManager):
+        self.serial = serial
+        self.raw_window.show()
+        self.query_serial()
 
     def query_serial(self):
         """
@@ -47,20 +52,14 @@ class App(object):
         self.schedule_window.after(200, self.query_serial)
 
     def attempt_connect(self, port, baud):
-        print("got datas")
         self.connect_window.set_data(port, baud)
-        print("set them")
         self.connect_window.show()
-        print("started connect window")
-        self.connect_window.show()
-        print("called")
 
     def show(self):
         """
             Az appot elindító kód
         """
         self.schedule_window.withdraw()
-        # self.query_serial()
         self.raw_window.hide()
         self.connect_window.hide()
         self.welcome_window.show()
