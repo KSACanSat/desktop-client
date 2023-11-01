@@ -4,8 +4,36 @@ from tkinter.messagebox import showerror
 from screens.screen import Screen
 from serial_comm import SerialManager, UnsupportedProtocolError
 from PIL.ImageTk import PhotoImage
-from PIL.Image import open
+from PIL import Image
 from serial.serialutil import SerialException
+import os
+import json
+
+
+class ConnectionSettings:
+    def __init__(self, port, baud):
+        self.port = port
+        self.baud = baud
+
+    @staticmethod
+    def _get_settings_path():
+        directory = os.path.expanduser('~') + "/.ksagent"
+        if not os.path.exists(directory):
+            os.mkdir(directory)
+        return f"{directory}/settings.json"
+
+    @staticmethod
+    def load():
+        settings_path = ConnectionSettings._get_settings_path()
+        if not os.path.exists(settings_path):
+            return ConnectionSettings(None, None)
+        settings = json.load(open(settings_path, "r"))
+        return ConnectionSettings(settings["port"], settings["baud"])
+
+    def save(self):
+        with open(ConnectionSettings._get_settings_path(), "w") as settings:
+            settings.write(json.dumps({"port": self.port, "baud": self.baud}))
+            settings.close()
 
 
 class WelcomeScreen(Screen):
@@ -14,10 +42,11 @@ class WelcomeScreen(Screen):
     def __init__(self, root_wnd, connecting_data_setter):
         super().__init__(root_wnd)
         self.connecting_data_setter = connecting_data_setter
+        self.settings = ConnectionSettings.load()
         self.root.geometry("500x400")
         self.root.update()
         # Logo part
-        self.logo_img = PhotoImage(master=self.root, image=open("assets/logo.png").resize((128, 128)))
+        self.logo_img = PhotoImage(master=self.root, image=Image.open("assets/logo.png").resize((128, 128)))
         self.logo = Label(self.root, image=self.logo_img)
         self.logo.pack(anchor=CENTER)
         self.title = Label(self.root, text="KSAgent", font=('Arial', 25, 'bold'))
@@ -31,6 +60,8 @@ class WelcomeScreen(Screen):
         self.port_label = Label(self.form_frame, text="Soros port:", font=self.prompt_label_font)
         self.port_label.pack(anchor=CENTER)
         self.port_entry = Entry(self.form_frame, font=self.prompt_entry_font, justify='center')
+        if self.settings.port is not None:
+            self.port_entry.insert(0, str(self.settings.port))
         self.port_entry.pack(anchor=CENTER)
         # baud rate entry
         self.baud_label = Label(self.form_frame, text="Baud rate:", font=self.prompt_label_font)
@@ -38,6 +69,8 @@ class WelcomeScreen(Screen):
         self.baud_entry = Combobox(self.form_frame, font=self.prompt_entry_font)
         self.baud_entry['values'] = WelcomeScreen.BAUD_OPTIONS
         self.baud_entry['state'] = 'readonly'
+        if self.settings.baud is not None:
+            self.baud_entry.set(str(self.settings.baud))
         self.baud_entry.pack(anchor=CENTER)
         # submit button
         self.submit_button = Button(self.form_frame, text="Csatlakozás", command=self.connect, font=('Arial', 18, 'bold'))
@@ -58,6 +91,10 @@ class WelcomeScreen(Screen):
             is_error = True
         if is_error:
             return
+        # save settings
+        self.settings.port = serial_port
+        self.settings.baud = baud_rate
+        self.settings.save()
         # pass params
         self.connecting_data_setter(serial_port, int(baud_rate))
 
