@@ -1,5 +1,4 @@
 from serial_comm import SerialManager
-import tkthread; tkthread.patch()
 from screens import *
 from tkinter import Tk, TclError
 
