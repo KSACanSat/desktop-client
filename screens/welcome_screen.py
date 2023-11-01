@@ -5,6 +5,7 @@ from screens.screen import Screen
 from serial_comm import SerialManager, UnsupportedProtocolError
 from PIL.ImageTk import PhotoImage
 from PIL.Image import open
+from serial.serialutil import SerialException
 
 
 class WelcomeScreen(Screen):
@@ -85,13 +86,13 @@ class ConnectingScreen(Screen):
         self.query_device()
 
     def query_device(self):
-        if self.serial_conn is None:
-            self.serial_conn = SerialManager(self.data['port'], self.data['baud'])
         is_error = False
         try:
+            if self.serial_conn is None:
+                self.serial_conn = SerialManager(self.data['port'], self.data['baud'])
             self.serial_conn.get()
             self.completed_responses += 1
-        except FileNotFoundError:
+        except SerialException:
             showerror(ConnectingScreen.ERRORBOX_TITLE, "A megadott porton nem található eszköz!")
             is_error = True
         except PermissionError:
