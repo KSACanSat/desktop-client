@@ -22,6 +22,9 @@ class Screen:
         self.root.deiconify()
 
     def hide(self):
+        """
+        Elrejti az ablakot...
+        """
         self.visible = False
         self.root.withdraw()
 

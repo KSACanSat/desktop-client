@@ -9,14 +9,28 @@ from serial.serialutil import SerialException
 import os
 import json
 
+"""
+Az indítóképernyőhöz tartozó ablakok...
+"""
+
 
 class ConnectionSettings:
+    """
+    A kapcsolat beállításai
+    """
     def __init__(self, port, baud):
+        """
+        :param port A soros port
+        :param baud A baud rate
+        """
         self.port = port
         self.baud = baud
 
     @staticmethod
     def _get_settings_path():
+        """
+        Lekérdezi a beállítások fájlját
+        """
         directory = os.path.expanduser('~') + "/.ksagent"
         if not os.path.exists(directory):
             os.mkdir(directory)
@@ -24,6 +38,9 @@ class ConnectionSettings:
 
     @staticmethod
     def load():
+        """
+        Betölti az aktuális beállításokat
+        """
         settings_path = ConnectionSettings._get_settings_path()
         if not os.path.exists(settings_path):
             return ConnectionSettings(None, None)
@@ -31,15 +48,26 @@ class ConnectionSettings:
         return ConnectionSettings(settings["port"], settings["baud"])
 
     def save(self):
+        """
+        Elmenti az akutális beállításokat
+        """
         with open(ConnectionSettings._get_settings_path(), "w") as settings:
             settings.write(json.dumps({"port": self.port, "baud": self.baud}))
             settings.close()
 
 
 class WelcomeScreen(Screen):
+    """
+    Az indító űrlap
+    """
+
     BAUD_OPTIONS = [300, 600, 1200, 2400, 4800, 9600, 14400, 19200, 28800, 31250, 38400, 57600, 115200]
 
     def __init__(self, root_wnd, connecting_data_setter):
+        """
+        :param root_wnd A szülő ablak
+        :param connecting_data_setter Az űrlap feldolgozásának végén meghívandó függvény, mely továbbítja az adatokat
+        """
         super().__init__(root_wnd)
         self.connecting_data_setter = connecting_data_setter
         self.settings = ConnectionSettings.load()
@@ -78,6 +106,9 @@ class WelcomeScreen(Screen):
         self.form_frame.pack()
 
     def connect(self):
+        """
+        Ellenőrzi a beküldött adatok helyességét, elmenti és tuvábbküldi azokat
+        """
         # get connection params
         serial_port = self.port_entry.get()
         baud_rate = self.baud_entry.get()
@@ -100,9 +131,17 @@ class WelcomeScreen(Screen):
 
 
 class ConnectingScreen(Screen):
+    """
+    A kapcsolat ellenőrzéséért felelős ablak.
+    """
+
     ERRORBOX_TITLE = "KSA Connection Agent: Hiba"
 
     def __init__(self, root_wnd, on_device_passes):
+        """
+        :param root_wnd A szülő ablak
+        :param on_device_passes Az ellenőrzésen átment kapcsolatot fogadó függvény
+        """
         super().__init__(root_wnd)
         self.data = {}
         self.serial_conn = None
@@ -117,31 +156,45 @@ class ConnectingScreen(Screen):
         self.progressbar.pack(anchor=CENTER, pady=10)
 
     def set_data(self, port, baud):
+        """
+        Fogadja a tesztelendó kapcsolat adatait és elindítja az ellenőrzést.
+        :param port A soros port
+        :param baud A baud rate
+        """
         self.data = {"port": port, "baud": baud}
         self.title_text.set(f"Csatlakozás a {self.data['port']} port eszközéhez...")
         self.progressbar.start()
         self.query_device()
 
     def query_device(self):
+        """
+        Az kapcsolatot ellenőrző függvény.
+        Először is inicializálja a soros kapcsolatot, majd 5 egymást követő alkalommal megpróbál adatot lekérni az eszköztől.
+        Ha ez sikerült, a program elküldi a `self.on_device_passes` callbackben meghatárzott függvénynek a kapcsolatot.
+        """
         is_error = False
         try:
+            # Kapcsolat inicializációja, ha még nincs meg
             if self.serial_conn is None:
                 self.serial_conn = SerialManager(self.data['port'], self.data['baud'])
+            # Adat lekérdezése
             self.serial_conn.get()
             self.completed_responses += 1
         except SerialException:
+            # A soros kapcsolatban létrejött hiba kezelése
             showerror(ConnectingScreen.ERRORBOX_TITLE, "A megadott porton nem található eszköz!")
             is_error = True
-        except PermissionError:
-            showerror(ConnectingScreen.ERRORBOX_TITLE, "Programozási hiba történt! Nézd meg a konzolt a részletekért!")
-            is_error = True
         except UnsupportedProtocolError:
+            # Nem támogatott eszköz kezelése
             showerror(ConnectingScreen.ERRORBOX_TITLE, "Az eszköz ismeretlen protokollt használ! Ellenőrizd, hogy jó portot adtál-e meg!")
             is_error = True
+        # A hibák, illetve a teszt végének kezelése
         if is_error or self.completed_responses == 5:
+            # Ablak elrejtése
             self.progressbar.stop()
             self.hide()
+            # Siker esetén a program továbbküldése
             if not is_error:
                 self.on_device_passes(self.serial_conn)
-            return
-        self.root.after(200, self.query_device)
+            return  # Annak megakadályozása, hogy a teszt tovább fusson
+        self.root.after(200, self.query_device)  # A következő teszt ütemezése

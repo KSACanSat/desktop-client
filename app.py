@@ -35,8 +35,22 @@ class App(object):
         self.connect_window = ConnectingScreen(self.schedule_window, self.set_serial_conn)
         self.raw_window = RawInfoScreen(self.schedule_window, self.stop)
 
+    def attempt_connect(self, port, baud):
+        """
+        Elindítja a kapcsolódást kezelő ablakot
+        :param port A soros port
+        :param baud A baud rate
+        """
+        self.connect_window.set_data(port, baud)
+        self.connect_window.show()
+
     def set_serial_conn(self, serial: SerialManager):
+        """
+        Beállítja a soros kommunikációt és elindítja a táblázatot.
+        :param serial A soros kommunikáció
+        """
         self.serial = serial
+        self.welcome_window.hide()
         self.raw_window.show()
         self.query_serial()
 
@@ -49,10 +63,6 @@ class App(object):
             self.raw_window.add_row(message)
             self.last_time = message["time"]
         self.schedule_window.after(200, self.query_serial)
-
-    def attempt_connect(self, port, baud):
-        self.connect_window.set_data(port, baud)
-        self.connect_window.show()
 
     def show(self):
         """
