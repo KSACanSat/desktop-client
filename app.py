@@ -31,7 +31,7 @@ class App(object):
         self.last_time = 0
         # UI setup
         self.schedule_window = Tk()
-        self.welcome_window = WelcomeScreen(self.schedule_window, self.attempt_connect)
+        self.welcome_window = WelcomeScreen(self.schedule_window, self.attempt_connect, self.stop)
         self.connect_window = ConnectingScreen(self.schedule_window, self.set_serial_conn)
         self.raw_window = RawInfoScreen(self.schedule_window, self.stop)
 
@@ -82,6 +82,7 @@ class App(object):
             self.schedule_window.destroy()
         except TclError:
             pass
-        self.serial.stop()
+        if self.serial is not None:
+            self.serial.stop()
         if close_id != "raw_window":
             self.raw_window.close()

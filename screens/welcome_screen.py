@@ -63,12 +63,12 @@ class WelcomeScreen(Screen):
 
     BAUD_OPTIONS = [300, 600, 1200, 2400, 4800, 9600, 14400, 19200, 28800, 31250, 38400, 57600, 115200]
 
-    def __init__(self, root_wnd, connecting_data_setter):
+    def __init__(self, root_wnd, connecting_data_setter, on_close):
         """
         :param root_wnd A szülő ablak
         :param connecting_data_setter Az űrlap feldolgozásának végén meghívandó függvény, mely továbbítja az adatokat
         """
-        super().__init__(root_wnd)
+        super().__init__(root_wnd, on_close)
         self.connecting_data_setter = connecting_data_setter
         self.settings = ConnectionSettings.load()
         self.root.geometry("500x400")
