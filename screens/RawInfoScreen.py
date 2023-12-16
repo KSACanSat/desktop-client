@@ -13,7 +13,7 @@ class RawInfoScreen(Screen):
         """
         super().__init__(root_wnd, on_close)
         # GUI SETUP
-        self.table = ResultTable(self.root, {"time": "Idő", "sensor1": "1. műszer"}, "time")
+        self.table = ResultTable(self.root, ["Idő", "Hőmérséklet", "Légnyomás", "Latitude", "Longitude", "Mes. altitude"], "time")
         self.table.pack()
 
     def add_row(self, row):

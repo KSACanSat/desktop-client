@@ -80,13 +80,9 @@ class SerialManager:
         :param data: A `SerialThread` által beolvasott adat
         """
         raw_info = bytes(data).decode().split("\r\n")[0]
-        # URL check
-        if "&" not in raw_info or "=" not in raw_info:
-            raise UnsupportedProtocolError.new()
         # Üzenet dictbe formázása
-        raw_pairs = raw_info.split("&")
-        current_data = {k: v for k, v in (raw_pair.split("=") for raw_pair in raw_pairs)}
-        self.info = current_data  # A formázott üzenet cashelése lekérdezésre
+        raw_pairs = raw_info.split(";")[:-1]
+        self.info = [float(raw_pair) for raw_pair in raw_pairs]
 
     def get(self):
         """
