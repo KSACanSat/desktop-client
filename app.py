@@ -1,5 +1,5 @@
 from serial_comm import SerialStream
-from io_manager import IOManager
+from io_manager import *
 from screens import *
 from tkinter import Tk, TclError
 
@@ -36,14 +36,20 @@ class App(object):
         self.connect_window = ConnectingScreen(self.schedule_window, self.set_serial_conn)
         self.raw_window = RawInfoScreen(self.schedule_window, self.stop, self.set_path)
 
-    def attempt_connect(self, port, baud):
+    def attempt_connect(self, data):
         """
         Elindítja a kapcsolódást kezelő ablakot
         :param port A soros port
         :param baud A baud rate
         """
-        self.connect_window.set_data(port, baud)
-        self.connect_window.show()
+        if data["type"] == "serial":
+            self.connect_window.set_data(data["data"][0], data["data"][1])
+            self.connect_window.show()
+        elif data["type"] == "recording":
+            self.io.set_stream(FileStream(data["data"], "plain"))
+            self.welcome_window.hide()
+            self.raw_window.show()
+            self.query_serial()
 
     def set_serial_conn(self, serial: SerialStream):
         """
@@ -63,10 +69,10 @@ class App(object):
             A soros kommunikáció eredményeinek megjelenése
         """
         message = self.io.get_message()
-        if self.last_time != message[0]:
+        if message[0] > self.last_time:
             self.raw_window.add_row(message)
             self.last_time = message[0]
-        self.schedule_window.after(200, self.query_serial)
+        self.schedule_window.after(200 if self.io.stream.get_type == "serial" else 20, self.query_serial)
 
     def show(self):
         """

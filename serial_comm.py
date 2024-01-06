@@ -93,6 +93,9 @@ class SerialStream(Stream):
             return self.get_message()
         return self.info
 
+    def get_type(self):
+        return "serial"
+
     def stop(self):
         """
         A soros kommunikáció leállítója

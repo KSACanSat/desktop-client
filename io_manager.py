@@ -1,6 +1,28 @@
 from io_stream import Stream
-from serial_comm import SerialStream
-import os, _io
+import _io
+
+
+class FileStream(Stream):
+
+    def __init__(self, path, mode="plain"):
+        self.file = open(path, "r")
+        self.mode = mode
+        self.content = []
+        self.index = 0
+
+    @property
+    def get_type(self):
+        return "file_" + self.mode
+
+    def get_message(self):
+        if len(self.content) == 0:
+            self.content = self.file.read().split('\n\n')[:-1]
+        msg = self.content[self.index if self.index < len(self.content) else len(self.content) - 1]
+        self.index += 1
+        return msg
+
+    def stop(self):
+        self.file.close()
 
 
 class IOManager:
