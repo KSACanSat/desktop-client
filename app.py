@@ -1,4 +1,5 @@
 from serial_comm import SerialManager
+from io_manager import IOManager, SerialStream
 from screens import *
 from tkinter import Tk, TclError
 
@@ -27,7 +28,7 @@ class App(object):
         return cls._instance
 
     def __init__(self):
-        self.serial = None
+        self.io = IOManager()
         self.last_time = 0
         # UI setup
         self.schedule_window = Tk()
@@ -49,7 +50,7 @@ class App(object):
         Beállítja a soros kommunikációt és elindítja a táblázatot.
         :param serial A soros kommunikáció
         """
-        self.serial = serial
+        self.io.set_stream(SerialStream(serial))
         self.welcome_window.hide()
         self.raw_window.show()
         self.query_serial()
@@ -58,7 +59,7 @@ class App(object):
         """
             A soros kommunikáció eredményeinek megjelenése
         """
-        message = self.serial.get()
+        message = self.io.get_message()
         if self.last_time != message[0]:
             self.raw_window.add_row(message)
             self.last_time = message[0]
