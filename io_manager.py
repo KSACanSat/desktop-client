@@ -12,10 +12,11 @@ class IOManager:
         self.stream = stream
 
     def set_path(self, path):
-        exists = os.path.exists(path)
-        if exists:
-            self.file = open(path, "a")
-        return exists
+        try:
+            self.file = open(path, "w+")
+            return True
+        except IOError:
+            return False
 
     def get_message(self):
         raw_message = self.stream.get_message()

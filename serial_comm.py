@@ -80,7 +80,7 @@ class SerialStream(Stream):
         A soros kommunikációs szál callbackja.
         :param data: A `SerialThread` által beolvasott adat
         """
-        self.info = str(data).split("b'")[1].split("'")[0]
+        self.info = data.decode('utf-8')
 
     def get_message(self):
         """
