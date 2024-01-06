@@ -34,6 +34,9 @@ class RawInfoScreen(Screen):
         if self.visible:
             self.table.add_data(row)
 
+    def disable_saving(self):
+        self.menubar.entryconfig("File", state="disabled")
+
     def get_path(self):
         path = filedialog.asksaveasfilename(parent=self.root, filetypes=[("Plain recording", "*.txt")],
                                             title="Save recorded data", defaultextension=".txt")

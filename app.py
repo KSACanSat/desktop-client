@@ -48,6 +48,7 @@ class App(object):
         elif data["type"] == "recording":
             self.io.set_stream(FileStream(data["data"], "plain"))
             self.welcome_window.hide()
+            self.raw_window.disable_saving()
             self.raw_window.show()
             self.query_serial()
 
