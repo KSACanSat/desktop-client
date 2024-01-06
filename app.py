@@ -1,5 +1,5 @@
-from serial_comm import SerialManager
-from io_manager import IOManager, SerialStream
+from serial_comm import SerialStream
+from io_manager import IOManager
 from screens import *
 from tkinter import Tk, TclError
 
@@ -45,12 +45,12 @@ class App(object):
         self.connect_window.set_data(port, baud)
         self.connect_window.show()
 
-    def set_serial_conn(self, serial: SerialManager):
+    def set_serial_conn(self, serial: SerialStream):
         """
         Beállítja a soros kommunikációt és elindítja a táblázatot.
         :param serial A soros kommunikáció
         """
-        self.io.set_stream(SerialStream(serial))
+        self.io.set_stream(serial)
         self.welcome_window.hide()
         self.raw_window.show()
         self.query_serial()
@@ -83,7 +83,6 @@ class App(object):
             self.schedule_window.destroy()
         except TclError:
             pass
-        if self.serial is not None:
-            self.serial.stop()
+        self.io.stop()
         if close_id != "raw_window":
             self.raw_window.close()

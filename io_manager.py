@@ -1,34 +1,32 @@
-from abc import abstractmethod
-from serial_comm import SerialManager
-
-
-class Stream:
-    @abstractmethod
-    def get_message(self):
-        pass
-
-    @abstractmethod
-    def stop(self):
-        pass
-
-
-class SerialStream(Stream):
-    def __init__(self, serial: SerialManager):
-        self.serial = serial
-
-    def get_message(self):
-        return self.serial.get()
-
-    def stop(self):
-        self.serial.stop()
+from io_stream import Stream
+from serial_comm import SerialStream
+import os, _io
 
 
 class IOManager:
     def __init__(self):
         self.stream: Stream = None
+        self.file: _io.TextIOWrapper = None
 
     def set_stream(self, stream: Stream):
         self.stream = stream
 
+    def set_path(self, path):
+        exists = os.path.exists(path)
+        if exists:
+            self.file = open(path, "a")
+        return exists
+
     def get_message(self):
-        return self.stream.get_message()
+        raw_message = self.stream.get_message()
+
+        if self.file is not None:
+            self.file.write(raw_message)
+
+        raw_pairs = raw_message.split(";")[:-1]
+        return [float(raw_pair) for raw_pair in raw_pairs]
+
+    def stop(self):
+        self.stream.stop()
+        if self.file is not None:
+            self.file.close()

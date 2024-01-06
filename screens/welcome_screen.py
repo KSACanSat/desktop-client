@@ -2,7 +2,7 @@ from tkinter import Frame, Entry, CENTER, Button, StringVar
 from tkinter.ttk import Combobox, Label, Progressbar
 from tkinter.messagebox import showerror
 from screens.screen import Screen
-from serial_comm import SerialManager, UnsupportedProtocolError
+from serial_comm import SerialStream, UnsupportedProtocolError
 from PIL.ImageTk import PhotoImage
 from PIL import Image
 from serial.serialutil import SerialException
@@ -176,9 +176,9 @@ class ConnectingScreen(Screen):
         try:
             # Kapcsolat inicializációja, ha még nincs meg
             if self.serial_conn is None:
-                self.serial_conn = SerialManager(self.data['port'], self.data['baud'])
+                self.serial_conn = SerialStream(self.data['port'], self.data['baud'])
             # Adat lekérdezése
-            self.serial_conn.get()
+            self.serial_conn.get_message()
             self.completed_responses += 1
         except SerialException:
             # A soros kapcsolatban létrejött hiba kezelése
