@@ -1,5 +1,6 @@
 from .result_table import ResultTable
 from .screen import Screen
+from tkinter import Menu, filedialog
 
 
 class RawInfoScreen(Screen):
@@ -7,12 +8,21 @@ class RawInfoScreen(Screen):
     A natúr adatok megjelenítésért felelős osztály
     """
     # noinspection PyMissingConstructor
-    def __init__(self, root_wnd, on_close):
+    def __init__(self, root_wnd, on_close, on_got_path):
         """
         :param on_close Az ablak kilépésekor meghívandó függvény
         """
         super().__init__(root_wnd, on_close)
-        # GUI SETUP
+        self.on_got_path = on_got_path
+        # # GUI SETUP
+        # ## Menu Setup
+        self.root.title("Raw Info Screen")
+        self.menubar = Menu(self.root)
+        self.file_menu = Menu(self.menubar, tearoff=0)
+        self.menubar.add_cascade(label="File", menu=self.file_menu)
+        self.file_menu.add_command(label="Start recording", command=self.get_path)
+        self.root.config(menu=self.menubar)
+        # ## Table Setup
         self.table = ResultTable(self.root, ["Idő", "Hőmérséklet", "Légnyomás", "Latitude", "Longitude", "Mes. altitude"], "time")
         self.table.pack()
 
@@ -23,3 +33,8 @@ class RawInfoScreen(Screen):
         """
         if self.visible:
             self.table.add_data(row)
+
+    def get_path(self):
+        path = filedialog.asksaveasfilename(parent=self.root, filetypes=[("Plain recording", "*.txt")],
+                                            title="Save recorded data", defaultextension=".txt")
+        self.on_got_path(path)

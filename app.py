@@ -34,7 +34,7 @@ class App(object):
         self.schedule_window = Tk()
         self.welcome_window = WelcomeScreen(self.schedule_window, self.attempt_connect, self.stop)
         self.connect_window = ConnectingScreen(self.schedule_window, self.set_serial_conn)
-        self.raw_window = RawInfoScreen(self.schedule_window, self.stop)
+        self.raw_window = RawInfoScreen(self.schedule_window, self.stop, self.set_path)
 
     def attempt_connect(self, port, baud):
         """
@@ -54,6 +54,9 @@ class App(object):
         self.welcome_window.hide()
         self.raw_window.show()
         self.query_serial()
+
+    def set_path(self, path):
+        self.io.set_path(path)
 
     def query_serial(self):
         """
