@@ -16,9 +16,10 @@ class FileStream(Stream):
 
     def get_message(self):
         if len(self.content) == 0:
-            self.content = self.file.read().split('\n\n')[:-1]
+            self.content = self.file.read().split('\n')[:-1]
         msg = self.content[self.index if self.index < len(self.content) else len(self.content) - 1]
-        self.index += 1
+        if self.index < len(self.content):
+            self.index += 1
         return msg
 
     def stop(self):
