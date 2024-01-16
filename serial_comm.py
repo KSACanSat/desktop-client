@@ -1,6 +1,7 @@
 from threading import Thread
 from serial import Serial
 from time import sleep
+from io_stream import Stream
 
 """
 A soros kommunikáció kezeléséhez tartozó osztályok helye.
@@ -58,7 +59,7 @@ class UnsupportedProtocolError(IOError):
         super.__init__(t, __obj)
 
 
-class SerialManager:
+class SerialStream(Stream):
     """
     A soros kommunikációt kezelő UI-safe osztály
     (olyan szintje a soros kommunikáció vezérlésének, ami nem blokkolja az ablakainkat)
@@ -79,12 +80,9 @@ class SerialManager:
         A soros kommunikációs szál callbackja.
         :param data: A `SerialThread` által beolvasott adat
         """
-        raw_info = bytes(data).decode().split("\r\n")[0]
-        # Üzenet dictbe formázása
-        raw_pairs = raw_info.split(";")[:-1]
-        self.info = [float(raw_pair) for raw_pair in raw_pairs]
+        self.info = data.decode('utf-8')
 
-    def get(self):
+    def get_message(self):
         """
         A legutóbbi adat lekérdezése ami beérkezett a földi rádióállomásunkról
         :return: A legutóbbi üzenet formázott változata
@@ -92,8 +90,11 @@ class SerialManager:
         # Ha nincs üzenet, várakozás amíg nem jön egy (0.2 másodpercenként ellenőrzés)
         if len(self.info) == 0:
             sleep(0.2)
-            return self.get()
+            return self.get_message()
         return self.info
+
+    def get_type(self):
+        return "serial"
 
     def stop(self):
         """

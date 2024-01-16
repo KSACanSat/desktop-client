@@ -1,8 +1,8 @@
-from tkinter import Frame, Entry, CENTER, Button, StringVar
+from tkinter import Frame, Entry, CENTER, Button, StringVar, filedialog, Menu
 from tkinter.ttk import Combobox, Label, Progressbar
 from tkinter.messagebox import showerror
 from screens.screen import Screen
-from serial_comm import SerialManager, UnsupportedProtocolError
+from serial_comm import SerialStream, UnsupportedProtocolError
 from PIL.ImageTk import PhotoImage
 from PIL import Image
 from serial.serialutil import SerialException
@@ -73,6 +73,12 @@ class WelcomeScreen(Screen):
         self.settings = ConnectionSettings.load()
         self.root.geometry("500x400")
         self.root.update()
+        #  Menu part
+        self.menubar = Menu(self.root)
+        self.file_menu = Menu(self.menubar)
+        self.menubar.add_cascade(label="File", menu=self.file_menu)
+        self.file_menu.add_command(label="Open recording", command=self.load_recording)
+        self.root.config(menu=self.menubar)
         # Logo part
         self.logo_img = PhotoImage(master=self.root, image=Image.open("assets/logo.png").resize((128, 128)))
         self.logo = Label(self.root, image=self.logo_img)
@@ -127,7 +133,12 @@ class WelcomeScreen(Screen):
         self.settings.baud = baud_rate
         self.settings.save()
         # pass params
-        self.connecting_data_setter(serial_port, int(baud_rate))
+        self.connecting_data_setter({"type": "serial", "data": (serial_port, int(baud_rate))})
+
+    def load_recording(self):
+        path = filedialog.askopenfilename(defaultextension="*.txt", filetypes=[("Plain Recording", "*.txt")],
+                                          title="Open a recording", parent=self.root)
+        self.connecting_data_setter({"type": "recording", "data": (path)})
 
 
 class ConnectingScreen(Screen):
@@ -176,9 +187,9 @@ class ConnectingScreen(Screen):
         try:
             # Kapcsolat inicializációja, ha még nincs meg
             if self.serial_conn is None:
-                self.serial_conn = SerialManager(self.data['port'], self.data['baud'])
+                self.serial_conn = SerialStream(self.data['port'], self.data['baud'])
             # Adat lekérdezése
-            self.serial_conn.get()
+            self.serial_conn.get_message()
             self.completed_responses += 1
         except SerialException:
             # A soros kapcsolatban létrejött hiba kezelése
