@@ -36,8 +36,8 @@ class App(object):
         self.welcome_window = WelcomeScreen(self.schedule_window, self.attempt_connect, self.stop)
         self.connect_window = ConnectingScreen(self.schedule_window, self.set_serial_conn)
         self.raw_window = RawInfoScreen(self.schedule_window, self.stop, self.set_path)
-        self.result = ResultScreen(self.schedule_window, 2, 2,
-                                   [Diagram(0, 0, "Hőmérséklet", [0])])
+        self.result = ResultScreen(self.schedule_window, 2, 1,
+                                   [Diagram(0, 0, "Hőmérséklet", [0, 1])])
 
     def attempt_connect(self, data):
         """

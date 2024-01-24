@@ -9,8 +9,8 @@ from screens.result_renderer.diagram import Diagram
 class ResultScreen(Screen):
     def __init__(self, root, rows, columns, diagrams):
         super().__init__(root, None)
-        self.figure = Figure(figsize=(10, 8), dpi=100)
         self.shape = (rows, columns)
+        self.figure = Figure(figsize=(columns * 3.5, rows * 2), dpi=100)
         self.diagrams = diagrams
         self.canvas = FigureCanvasTkAgg(self.figure, master=self.root)
         self.canvas.draw()
@@ -23,6 +23,9 @@ class ResultScreen(Screen):
             for ci in range(self.shape[1]):
                 di = Diagram.find_diagram_for_place(self.diagrams, ri, ci)
                 if di is not None:
-                    axes[ri][ci] = self.diagrams[di].draw(axes[ri][ci], result)
+                    if self.shape[1] > 1:
+                        axes[ri][ci] = self.diagrams[di].draw(axes[ri][ci], result)
+                    else:
+                        axes[ri] = self.diagrams[di].draw(axes[ri], result)
         self.canvas.draw()
         self.canvas.flush_events()

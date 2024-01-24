@@ -1,4 +1,5 @@
 from matplotlib.axes import Axes
+import numpy as np
 
 
 class Diagram:
@@ -6,15 +7,24 @@ class Diagram:
         self.row = row
         self.column = column
         self.title = title
-        self.xdata = []
-        self.ydata = []
+        self.inputs = inputs
+        self.data = []
 
     def draw(self, axes: Axes, row) -> Axes:
-        self.ydata.append(row[1])
-        self.xdata.append(row[0])
+        self.append_data(row)
         axes.set_title(self.title)
-        axes.plot(self.xdata, self.ydata)
+        axes = self.plot(axes)
         return axes
+
+    def plot(self, axes: Axes) -> Axes:
+        axes.plot(self.data[:, 0], self.data[:, 1])
+        return axes
+
+    def append_data(self, row):
+        if type(self.data) != np.ndarray:
+            self.data = np.array([[row[ci] for ci in range(len(self.inputs))]])
+        else:
+            self.data = np.append(self.data, [[row[ci] for ci in range(len(self.inputs))]], axis=0)
 
     @staticmethod
     def find_diagram_for_place(diagrams, row, column):
