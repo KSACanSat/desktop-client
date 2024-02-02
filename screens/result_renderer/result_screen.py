@@ -1,16 +1,14 @@
-from matplotlib.backend_bases import key_press_handler
-from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
-                                               NavigationToolbar2Tk)
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 from screens.screen import Screen
 from screens.result_renderer.diagram import Diagram
 
 
 class ResultScreen(Screen):
-    def __init__(self, root, rows, columns, diagrams):
+    def __init__(self, root, rows, columns, diagrams, size_modifiers=(3.5, 2)):
         super().__init__(root, None)
         self.shape = (rows, columns)
-        self.figure = Figure(figsize=(columns * 3.5, rows * 2), dpi=100)
+        self.figure = Figure(figsize=(columns * size_modifiers[0], rows * size_modifiers[1]), dpi=100)
         self.diagrams = diagrams
         self.canvas = FigureCanvasTkAgg(self.figure, master=self.root)
         self.canvas.draw()
@@ -18,7 +16,7 @@ class ResultScreen(Screen):
 
     def add_result(self, result):
         self.figure.clear()
-        axes = self.figure.subplots(self.shape[0], self.shape[1])
+        axes = self.figure.subplots(self.shape[0], self.shape[1], sharex=True)
         for ri in range(self.shape[0]):
             for ci in range(self.shape[1]):
                 di = Diagram.find_diagram_for_place(self.diagrams, ri, ci)
