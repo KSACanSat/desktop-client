@@ -34,3 +34,13 @@ class Diagram:
             if diagrams[di].row == row and diagrams[di].column == column:
                 return di
         return None
+
+
+class MultiPlotDiagram(Diagram):
+    def __init__(self, row, column, title, inputs):
+        super().__init__(row, column, title, inputs)
+
+    def plot(self, axes: Axes) -> Axes:
+        for ci in range(1, len(self.inputs)):
+            axes.plot(self.data[:, 0], self.data[:, ci])
+        return axes
