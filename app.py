@@ -38,8 +38,9 @@ class App(object):
         self.raw_window = RawInfoScreen(self.schedule_window, self.stop, self.set_path)
         self.result = ResultScreen(self.schedule_window, 2, 1,
                                    [Diagram(0, 0, "Hőmérséklet", [0, 1]),
-                                        MultiPlotDiagram(1, 0, "Gyro", [0, 2, 3, 4])],
+                                    MultiPlotDiagram(1, 0, "Gyro", [0, 2, 3, 4])],
                                    (4, 2))
+        self.gps = GPSScreen(self.schedule_window)
 
     def attempt_connect(self, data):
         """
