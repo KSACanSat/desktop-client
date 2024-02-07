@@ -22,9 +22,9 @@
             if(data[0] === last_time) return;
             last_time = data[0];
             let position = [data[1], data[2]]
-            openstreetmap.setView(position, 13)
             if(first_packet)
             {
+                openstreetmap.setView(position, 13)
                 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     maxZoom: 19,
                     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'

@@ -67,7 +67,6 @@ class WebsocketThread(threading.Thread):
 
     def send(self, message):
         self.message = message
-        print(message)
 
     def run(self):
         asyncio.run(self._websocket_entrypoint())
