@@ -47,7 +47,7 @@ class IOManager:
         if self.file is not None:
             self.file.write(raw_message)
 
-        raw_pairs = raw_message.split(";")[:-1]
+        raw_pairs = raw_message.split(";")
         return [float(raw_pair) for raw_pair in raw_pairs]
 
     def stop(self):

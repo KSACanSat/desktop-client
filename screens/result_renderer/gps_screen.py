@@ -1,5 +1,5 @@
 import asyncio
-import queue
+import webbrowser
 import threading
 from os.path import dirname, exists
 import websockets
@@ -18,6 +18,11 @@ class FlaskThread(threading.Thread):
         @self.app.route("/")
         def serve_index():
             content = open(FlaskThread._get_full_path("index.html"), "r").read()
+            return content
+
+        @self.app.route("/start")
+        def serve_start_page():
+            content = open(FlaskThread._get_full_path("starting_gps.html"), "r").read()
             return content
 
         @self.app.route("/assets/<path>")
@@ -62,6 +67,7 @@ class WebsocketThread(threading.Thread):
 
     def send(self, message):
         self.message = message
+        print(message)
 
     def run(self):
         asyncio.run(self._websocket_entrypoint())
@@ -82,9 +88,11 @@ class GPSScreen(Screen):
         self.visible = True
         self.web_server.start()
         self.websocket_server.start()
+        webbrowser.open("http://localhost:5000/start")
 
     def add_result(self, packet):
-        self.websocket_server.send(" ".join([str(data) for data in [packet[0], packet[-1], packet[-2]]]))
+        packet_length = len(packet)
+        self.websocket_server.send(" ".join([str(data) for data in [packet[0], packet[packet_length-2], packet[packet_length-1]]]))
 
     def hide(self):
         # TODO: Send window close command
