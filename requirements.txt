@@ -1,4 +1,4 @@
 pyserial~=3.5
 Pillow~=10.1.0
-flask-socketio
 flask
+websockets

@@ -79,6 +79,7 @@ class App(object):
         if message[0] > self.last_time:
             self.raw_window.add_row(message)
             self.result.add_result(message)
+            self.gps.add_result(message)
             self.last_time = message[0]
         self.schedule_window.after(200 if self.io.stream.get_type == "serial" else 20, self.query_serial)
 
