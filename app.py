@@ -40,7 +40,7 @@ class App(object):
                                    [Diagram(2, 0, "Temperature", [0, 11]),
                                         MultiPlotDiagram(0, 1, "Gyroscope-Time", [0, 2, 3, 4]),
                                         MultiPlotDiagram(1, 0, "Magnetomter-Time", [0, 5, 6, 7]),
-                                        MultiPlotDiagram(0, 0, "Acceloration-Time", [0, 8, 9, 10]),
+                                        MultiPlotDiagram(0, 0, "Acceleration-Time", [0, 8, 9, 10]),
                                         Diagram(2, 1, "Pressure", [0, 12])],
                                    (4, 2))
         self.gps = GPSScreen(self.schedule_window)
