@@ -33,7 +33,9 @@
             L.marker(position).addTo(openstreetmap)
             console.log(data)
         };
-
+        websocket.onclose = (_) => {
+            window.close()
+        }
     });
 </script>
 </body>
