@@ -22,9 +22,9 @@ class Diagram:
 
     def append_data(self, row):
         if type(self.data) != np.ndarray:
-            self.data = np.array([[row[ci] for ci in range(len(self.inputs))]])
+            self.data = np.array([[row[ci] for ci in self.inputs]])
         else:
-            self.data = np.append(self.data, [[row[ci] for ci in range(len(self.inputs))]], axis=0)
+            self.data = np.append(self.data, [[row[ci] for ci in self.inputs]], axis=0)
 
     @staticmethod
     def find_diagram_for_place(diagrams, row, column):

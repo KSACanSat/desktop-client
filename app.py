@@ -36,10 +36,14 @@ class App(object):
         self.welcome_window = WelcomeScreen(self.schedule_window, self.attempt_connect, self.stop)
         self.connect_window = ConnectingScreen(self.schedule_window, self.set_serial_conn)
         self.raw_window = RawInfoScreen(self.schedule_window, self.stop, self.set_path)
-        self.result = ResultScreen(self.schedule_window, 2, 1,
-                                   [Diagram(0, 0, "Hőmérséklet", [0, 1]),
-                                        MultiPlotDiagram(1, 0, "Gyro", [0, 2, 3, 4])],
+        self.result = ResultScreen(self.schedule_window, 3, 2,
+                                   [Diagram(2, 0, "Temperature", [0, 11]),
+                                        MultiPlotDiagram(0, 1, "Gyroscope-Time", [0, 2, 3, 4]),
+                                        MultiPlotDiagram(1, 0, "Magnetomter-Time", [0, 5, 6, 7]),
+                                        MultiPlotDiagram(0, 0, "Acceleration-Time", [0, 8, 9, 10]),
+                                        Diagram(2, 1, "Pressure", [0, 12])],
                                    (4, 2))
+        self.gps = GPSScreen(self.schedule_window)
 
     def attempt_connect(self, data):
         """

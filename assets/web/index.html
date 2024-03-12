@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GPS Map</title>
+    <link rel="stylesheet" href="assets/leaflet.css" type="text/css"/>
+    <script src="assets/leaflet.js"></script>
+</head>
+<body>
+<div id="map" style="height: 640px; width: 720px"></div>
+<script>
+    window.addEventListener("DOMContentLoaded", () => {
+        const messages = document.createElement("ul");
+        document.body.appendChild(messages);
+        let openstreetmap = L.map("map")
+
+        const websocket = new WebSocket(`ws://${window.location.hostname}:5678/`);
+        let last_time = 0
+        websocket.onmessage = (packet) => {
+            let first_packet = last_time === 0;
+            let data = packet.data.split(" ").map((item, _, __) => parseFloat(item))
+            if(data[0] === last_time) return;
+            last_time = data[0];
+            let position = [data[1], data[2]]
+            if(first_packet)
+            {
+                openstreetmap.setView(position, 13)
+                L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                }).addTo(openstreetmap);
+            }
+            L.marker(position).addTo(openstreetmap)
+            console.log(data)
+        };
+        websocket.onclose = (_) => {
+            window.close()
+        }
+    });
+</script>
+</body>
+</html>

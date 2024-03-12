@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Opening GPS...</title>
+</head>
+<body>
+<h1 align="center">We've opened the GPS map in a separated window!</h1>
+<script>
+  let params = `scrollbars=no,resizable=no,status=no,location=no,toolbar=no,menubar=no,
+  width=640,height=720,left=-640,top=-720`;
+  open('/', 'GPS Map', params);
+  setTimeout(() => window.close(), 5000);
+</script>
+</body>
+</html>
