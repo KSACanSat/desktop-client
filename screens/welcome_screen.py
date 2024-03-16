@@ -1,7 +1,7 @@
 from tkinter import Frame, Entry, CENTER, Button, StringVar, filedialog, Menu
 from tkinter.ttk import Combobox, Label, Progressbar
 from tkinter.messagebox import showerror
-from screens.screen import Screen
+from screens.screen import Screen, MenuItem
 from serial_comm import SerialStream, UnsupportedProtocolError
 from PIL.ImageTk import PhotoImage
 from PIL import Image
@@ -74,18 +74,17 @@ class WelcomeScreen(Screen):
         self.root.geometry("500x400")
         self.root.update()
         #  Menu part
-        self.menubar = Menu(self.root)
-        self.file_menu = Menu(self.menubar)
-        self.menubar.add_cascade(label="File", menu=self.file_menu)
-        self.file_menu.add_command(label="Open recording", command=self.load_recording)
+        menu = MenuItem("File", children=[
+            MenuItem("Open a recording", command=self.load_recording)
+        ])
+        self.menubar = menu.generate_menu(self.root)
         self.root.config(menu=self.menubar)
         # Logo part
-        self.logo_img = PhotoImage(master=self.root, image=Image.open("assets/logo.png").resize((128, 128)))
+        self.logo_img = PhotoImage(image=Image.open("assets/logo.png").resize((128, 128)))
         self.logo = Label(self.root, image=self.logo_img)
         self.logo.pack(anchor=CENTER)
         self.title = Label(self.root, text="KSAgent", font=('Arial', 25, 'bold'))
         self.title.pack(anchor=CENTER, pady=12)
-
         # Form part
         self.prompt_label_font = ('Arial', 20, 'bold')
         self.prompt_entry_font = ('Arial', 16)

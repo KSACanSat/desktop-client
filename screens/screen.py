@@ -1,4 +1,26 @@
-from tkinter import TclError, Toplevel
+from tkinter import TclError, Toplevel, Menu
+
+
+class MenuItem:
+    def __init__(self, title, command=None, children=None, enabled=True):
+        self.title = title
+        self.command = command
+        self.children = children
+        self.enabled = enabled
+
+    def generate_menu(self, root):
+        root_menu = Menu(root)
+        if self.children is not None:
+            for child in self.children:
+                child_menu = child.generate_menu(root_menu)
+                print(child_menu, child.title)
+                root_menu.add_cascade(menu=child_menu, label=self.title)
+        elif self.command is not None:
+            root_menu.add_command(label=self.title, command=self.command)
+            print(self.title)
+        if not self.enabled:
+            root_menu.entryconfigure(0, state='disabled')
+        return root_menu
 
 
 class Screen:

@@ -1,6 +1,6 @@
 from .result_table import ResultTable
-from .screen import Screen
-from tkinter import Menu, filedialog
+from .screen import Screen, MenuItem
+from tkinter import filedialog
 
 
 class RawInfoScreen(Screen):
@@ -15,12 +15,10 @@ class RawInfoScreen(Screen):
         super().__init__(root_wnd, "Raw Info", on_close)
         self.on_got_path = on_got_path
         # # GUI SETUP
-        # ## Menu Setup
-        self.menubar = Menu(self.root)
-        self.file_menu = Menu(self.menubar, tearoff=0)
-        self.menubar.add_cascade(label="File", menu=self.file_menu)
-        self.file_menu.add_command(label="Start recording", command=self.get_path)
-        self.root.config(menu=self.menubar)
+        # ## Menu
+        menu = MenuItem("File", children=[MenuItem("Start recording", command=self.get_path)])
+        self.menu = menu.generate_menu(self.root)
+        self.root.config(menu=self.menu)
         # ## Table Setup
         self.table = ResultTable(self.root, ["Time", "ID", "Gyro X", "Gyro Y", "Gyro Z", "Mag X", "Mag Y", "Mag Z", "Acc X", "Acc Y", "Acc Z","Temp", "Press", "Lat", "Long"], "time")
         self.table.pack()
@@ -34,7 +32,7 @@ class RawInfoScreen(Screen):
             self.table.add_data(row)
 
     def disable_saving(self):
-        self.menubar.entryconfig("File", state="disabled")
+        self.menu.entryconfig("File", state="disabled")
 
     def get_path(self):
         path = filedialog.asksaveasfilename(parent=self.root, filetypes=[("Plain recording", "*.txt")],
