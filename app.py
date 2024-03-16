@@ -59,6 +59,8 @@ class App(object):
             self.welcome_window.hide()
             self.raw_window.disable_saving()
             self.raw_window.show()
+            self.result.show()
+            self.gps.show()
             self.query_serial()
 
     def set_serial_conn(self, serial: SerialStream):
@@ -69,6 +71,8 @@ class App(object):
         self.io.set_stream(serial)
         self.welcome_window.hide()
         self.raw_window.show()
+        self.result.show()
+        self.gps.show()
         self.query_serial()
 
     def set_path(self, path):
@@ -91,6 +95,7 @@ class App(object):
         """
         self.schedule_window.withdraw()
         self.raw_window.hide()
+        self.result.hide()
         self.connect_window.hide()
         self.welcome_window.show()
         self.schedule_window.mainloop()

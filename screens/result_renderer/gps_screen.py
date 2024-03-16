@@ -81,7 +81,6 @@ class GPSScreen(Screen):
         self.web_server = FlaskThread()
         self.websocket_server = WebsocketThread()
         self.root.withdraw()
-        self.show()
 
     def show(self):
         self.visible = True
