@@ -51,6 +51,7 @@ class IOManager:
         return [float(raw_pair) if "\n" not in raw_pair and len(raw_pair) > 0 else 0.00 for raw_pair in raw_pairs][:-1]
 
     def stop(self):
-        self.stream.stop()
+        if self.stream is not None:
+            self.stream.stop()
         if self.file is not None:
             self.file.close()

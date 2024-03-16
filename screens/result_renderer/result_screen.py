@@ -27,3 +27,6 @@ class ResultScreen(Screen):
                         axes[ri] = self.diagrams[di].draw(axes[ri], result)
         self.canvas.draw()
         self.canvas.flush_events()
+
+    def close(self):
+        self.root.destroy()

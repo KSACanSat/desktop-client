@@ -109,5 +109,6 @@ class App(object):
         except TclError:
             pass
         self.io.stop()
+        self.gps.close()
         if close_id != "raw_window":
             self.raw_window.close()
