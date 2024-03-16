@@ -23,7 +23,7 @@ class RawInfoScreen(Screen):
         self.file_menu.add_command(label="Start recording", command=self.get_path)
         self.root.config(menu=self.menubar)
         # ## Table Setup
-        self.table = ResultTable(self.root, ["Idő", "Hőmérséklet", "Légnyomás", "Latitude", "Longitude", "Mes. altitude"], "time")
+        self.table = ResultTable(self.root, ["Time", "ID", "Gyro X", "Gyro Y", "Gyro Z", "Mag X", "Mag Y", "Mag Z", "Acc X", "Acc Y", "Acc Z","Temp", "Press", "Lat", "Long"], "time")
         self.table.pack()
 
     def add_row(self, row):
