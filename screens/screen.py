@@ -5,13 +5,14 @@ class Screen:
     """
     Egy alaposztály a képernyők deklarálásához.
     """
-    def __init__(self, root_window, on_close_handler=None):
+    def __init__(self, root_window, title, on_close_handler=None):
         """
         :param on_close_handler A leállításkor meghívandó egyéb függvény
         """
         self.visible = False
         self.on_close_handler = on_close_handler
         self.root = Toplevel(root_window)
+        self.root.title(title)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
 
     def show(self):

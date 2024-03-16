@@ -12,11 +12,10 @@ class RawInfoScreen(Screen):
         """
         :param on_close Az ablak kilépésekor meghívandó függvény
         """
-        super().__init__(root_wnd, on_close)
+        super().__init__(root_wnd, "Raw Info", on_close)
         self.on_got_path = on_got_path
         # # GUI SETUP
         # ## Menu Setup
-        self.root.title("Raw Info Screen")
         self.menubar = Menu(self.root)
         self.file_menu = Menu(self.menubar, tearoff=0)
         self.menubar.add_cascade(label="File", menu=self.file_menu)

@@ -68,7 +68,7 @@ class WelcomeScreen(Screen):
         :param root_wnd A szülő ablak
         :param connecting_data_setter Az űrlap feldolgozásának végén meghívandó függvény, mely továbbítja az adatokat
         """
-        super().__init__(root_wnd, on_close)
+        super().__init__(root_wnd, "KSAgent Start", on_close)
         self.connecting_data_setter = connecting_data_setter
         self.settings = ConnectionSettings.load()
         self.root.geometry("500x400")
@@ -153,7 +153,7 @@ class ConnectingScreen(Screen):
         :param root_wnd A szülő ablak
         :param on_device_passes Az ellenőrzésen átment kapcsolatot fogadó függvény
         """
-        super().__init__(root_wnd)
+        super().__init__(root_wnd, "Connecting...")
         self.data = {}
         self.serial_conn = None
         self.completed_responses = 0
