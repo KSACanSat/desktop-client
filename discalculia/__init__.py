@@ -16,5 +16,6 @@ All classes are subclasses of the base `Task` interface which provides abstract 
  - `CalculationTask` - takes labels and calculates the result using the function you provide it at the `process` method.
 """
 
-from discalculia.tasks import LabelTask
 from discalculia.discalculia import Discalculia
+from discalculia.tasks import LabelTask
+from discalculia.calc_tasks import PressureAltCalcTask

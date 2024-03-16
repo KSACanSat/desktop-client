@@ -41,11 +41,13 @@ class App(object):
                                    [Diagram(2, 0, "Temperature", [0, 11]),
                                         MultiPlotDiagram(0, 1, "Gyroscope-Time", [0, 2, 3, 4]),
                                         MultiPlotDiagram(1, 0, "Magnetomter-Time", [0, 5, 6, 7]),
-                                        MultiPlotDiagram(0, 0, "Acceleration-Time", [0, 8, 9, 10]),
+                                        MultiPlotDiagram(1, 1, "Acceleration-Time", [0, 8, 9, 10]),
+                                        Diagram(0, 0, "Alt", [0, -1]),
                                         Diagram(2, 1, "Pressure", [0, 12])],
                                    (4, 2))
         self.discalculia = Discalculia()
         self.discalculia.add_task(LabelTask(["time", "id", "mag_x", "mag_y", "mag_z", "gyro_x", "gyro_y", "gyro_z", "acc_x", "acc_y", "acc_z", "temp", "press", "lat", "lng"]))
+        self.discalculia.add_task(PressureAltCalcTask("press", "temp", "alt"))
         self.gps = GPSScreen(self.schedule_window)
 
     def attempt_connect(self, data):
