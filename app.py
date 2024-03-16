@@ -3,6 +3,7 @@ from io_manager import *
 from screens import *
 from tkinter import Tk, TclError
 from screens.result_renderer.diagram import *
+from discalculia import *
 
 
 class App(object):
@@ -43,6 +44,8 @@ class App(object):
                                         MultiPlotDiagram(0, 0, "Acceleration-Time", [0, 8, 9, 10]),
                                         Diagram(2, 1, "Pressure", [0, 12])],
                                    (4, 2))
+        self.discalculia = Discalculia()
+        self.discalculia.add_task(LabelTask(["time", "id", "mag_x", "mag_y", "mag_z", "gyro_x", "gyro_y", "gyro_z", "acc_x", "acc_y", "acc_z", "temp", "press", "lat", "lng"]))
         self.gps = GPSScreen(self.schedule_window)
 
     def attempt_connect(self, data):
@@ -61,7 +64,8 @@ class App(object):
             self.raw_window.show()
             self.result.show()
             self.gps.show()
-            self.query_serial()
+            self.schedule_window.after(10, self.query_serial)
+            self.schedule_window.after(20, self.query_results)
 
     def set_serial_conn(self, serial: SerialStream):
         """
@@ -85,9 +89,14 @@ class App(object):
         message = self.io.get_message()
         if message[0] > self.last_time:
             self.raw_window.add_row(message)
-            self.result.add_result(message)
+            self.discalculia.process_packet(message)
             self.last_time = message[0]
         self.schedule_window.after(200 if self.io.stream.get_type == "serial" else 20, self.query_serial)
+
+    def query_results(self):
+        for results in self.discalculia.get_done_packets():
+            self.result.add_result([val for val in results.values()])
+        self.schedule_window.after(20, self.query_results)
 
     def show(self):
         """
