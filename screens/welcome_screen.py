@@ -1,5 +1,5 @@
-from tkinter import Frame, Entry, CENTER, Button, StringVar, filedialog, Menu
-from tkinter.ttk import Combobox, Label, Progressbar
+from tkinter import Frame, constants, CENTER, Button, StringVar, filedialog, Canvas, Entry
+from tkinter.ttk import Label, Progressbar, Treeview, Scrollbar
 from tkinter.messagebox import showerror
 from screens.screen import Screen, MenuItem
 from serial_comm import SerialStream, UnsupportedProtocolError
@@ -13,46 +13,133 @@ Az indítóképernyőhöz tartozó ablakok...
 """
 
 
-class ConnectionSettings:
-    """
-    A kapcsolat beállításai
-    """
-    def __init__(self, port, baud):
-        """
-        :param port A soros port
-        :param baud A baud rate
-        """
-        self.port = port
-        self.baud = baud
+class DeviceItem(Frame):
+    def __init__(self, master, device, connect_callback, file_callback, more_callback, *args, **kwargs):
+        super().__init__(master, *args, **kwargs)
+        self.photos = []
+        self.logo = self.__photo("assets/logo.png", (64, 64))
+        self.logo.grid(row=0, column=0)
+        self.info_frame = Frame(self, width=250)
+        self.name = StringVar(master=self)
+        self.name_label = Label(self.info_frame, textvariable=self.name)
+        self.name_label.pack()
+        self.path = StringVar(master=self)
+        self.path_label = Label(self.info_frame, textvariable=self.path)
+        self.path_label.pack()
+        self.info_frame.grid(row=0, column=1)
+        self.action_frame = Frame(self, width=128)
+        self.connect_btn = self.__action_button(self.action_frame, "assets/connect.png", connect_callback)
+        self.connect_btn.grid(row=0, column=0)
+        self.load_btn = self.__action_button(self.action_frame, "assets/load.png", file_callback)
+        self.load_btn.grid(row=0, column=1)
+        self.more_btn = self.__action_button(self.action_frame, "assets/menu.png", more_callback)
+        self.more_btn.grid(row=1, column=0)
+        self.action_frame.grid(row=0, column=2)
+        self.update_device(device)
 
-    @staticmethod
-    def _get_settings_path():
-        """
-        Lekérdezi a beállítások fájlját
-        """
-        directory = os.path.expanduser('~') + "/.ksagent"
-        if not os.path.exists(directory):
-            os.mkdir(directory)
-        return f"{directory}/settings.json"
+    def __action_button(self, master, icon_path, command):
+        btn = self.__photo(icon_path, (32, 32), "button", master)
+        btn.bind("<Button-1>", command)
+        return btn
 
-    @staticmethod
-    def load():
-        """
-        Betölti az aktuális beállításokat
-        """
-        settings_path = ConnectionSettings._get_settings_path()
-        if not os.path.exists(settings_path):
-            return ConnectionSettings(None, None)
-        settings = json.load(open(settings_path, "r"))
-        return ConnectionSettings(settings["port"], settings["baud"])
+    def __photo(self, path, size, type="label", master=None):
+        parent = master if master is not None else self
+        photo = PhotoImage(image=Image.open(path).resize(size), master=parent)
+        self.photos.append(photo)
+        if type == "button":
+            return Button(parent, image=photo)
+        else:
+            return Label(parent, image=photo, width=8)
 
-    def save(self):
+    def update_device(self, device):
+        self.name.set(device.name)
+        self.path.set(f"{device.port} at speed {device.baud}")
+
+
+class EditableLabel(Frame):
+    def __init__(self, master, label, value, on_change, is_label=True):
+        super().__init__(master)
+        self.on_change = on_change
+        self.value = value
+        if is_label:
+            self.label = Label(self, text=label)
+            self.label.pack()
+
+        self.value_label = Label(self, text=value)
+        self.value_label.pack()
+
+        self.entry = Entry(self)
+        self.entry.insert(constants.INSERT, value)
+
+        self.value_label.bind("<Button-1>", self.__on_click)
+        self.entry.bind("<Button-1>", lambda event: self.entry.focus_set())
+        self.entry.bind("<Escape>", self.__on_escape)
+        self.entry.bind("<FocusOut>", self.__on_escape)
+        self.entry.bind("<Return>", self.__on_return)
+
+    def __on_click(self, _):
         """
-        Elmenti az akutális beállításokat
+        Activate the entry
         """
-        with open(ConnectionSettings._get_settings_path(), "w") as settings:
-            settings.write(json.dumps({"port": self.port, "baud": self.baud}))
-            settings.close()
+        self.value_label.pack_forget()
+        self.entry.pack()
+        self.entry.focus_set()
+
+    def __on_escape(self, _):
+        """
+        Reset to label if we need to cancel
+        """
+        self.entry.pack_forget()
+        self.entry.delete(0, constants.END)
+        self.entry.insert(constants.INSERT, self.value)
+        self.value_label.pack()
+
+    def __on_return(self, _):
+        """
+        Reset to label, but updating its value to the new one (and call the change callback)
+        """
+        new_text = self.entry.get()
+        self.value = new_text
+        self.on_change(new_text)
+        self.entry.pack_forget()
+        self.value_label.pack()
+        self.value_label.configure(text=new_text)
+
+    def set_value(self, val):
+        """
+        Sets the UI to the given text value
+        Parameters
+        ----------
+        val: str
+            The new value for the UI
+        """
+        self.value = val
+        self.value_label.configure(text=val)
+        self.entry.delete(0, constants.END)
+        self.entry.insert(0, val)
+
+
+class MatrixEntryField(Frame):
+    def __init__(self, master, label, shape, data, on_change):
+        super().__init__(master)
+        self.data = data if len(shape) == 2 and shape[0] > 1 else [data]
+        self.on_change = on_change
+
+        self.label = Label(self, text=label)
+        self.label.pack()
+
+        self.entries = []
+        self.entry_frame = Frame(self)
+        for i in range(shape[0]):
+            for j in range(shape[1]):
+                entry = EditableLabel(self.entry_frame, "", self.data[i][j],
+                                      lambda val: self._on_entry_received(i, j, val), False)
+                entry.grid(row=i, column=j)
+                self.entries.append(entry)
+
+    def _on_entry_received(self, x, y, value):
+        self.data[x][y] = value
+        self.on_change(value)
 
 
 class WelcomeScreen(Screen):
@@ -68,6 +155,7 @@ class WelcomeScreen(Screen):
         :param connecting_data_setter Az űrlap feldolgozásának végén meghívandó függvény, mely továbbítja az adatokat
         """
         super().__init__(root_wnd, "KSAgent Start", on_close)
+        self.assets_to_save = []
         self.connecting_data_setter = connecting_data_setter
         self.devices = Device.load_devices()
         self.current_device = 0
@@ -80,37 +168,77 @@ class WelcomeScreen(Screen):
         self.menubar = menu.generate_menu(self.root)
         self.root.config(menu=self.menubar)
         # Logo part
-        self.logo_img = PhotoImage(image=Image.open("assets/logo.png").resize((128, 128)))
-        self.logo = Label(self.root, image=self.logo_img)
+        logo_img = PhotoImage(image=Image.open("assets/logo.png").resize((128, 128)), master=self.root)
+        self.assets_to_save.append(logo_img)
+        self.logo = Label(self.root, image=logo_img)
         self.logo.pack(anchor=CENTER)
         self.title = Label(self.root, text="KSAgent", font=('Arial', 25, 'bold'))
         self.title.pack(anchor=CENTER, pady=12)
         # Form part
-        self.prompt_label_font = ('Arial', 20, 'bold')
-        self.prompt_entry_font = ('Arial', 16)
-        self.form_frame = Frame(self.root)
-        # serial port entry
-        self.port_label = Label(self.form_frame, text="Soros port:", font=self.prompt_label_font)
-        self.port_label.pack(anchor=CENTER)
-        self.port_entry = Entry(self.form_frame, font=self.prompt_entry_font, justify='center')
-        if self.settings.port is not None:
-            self.port_entry.insert(0, str(self.settings.port))
-        self.port_entry.pack(anchor=CENTER)
-        # baud rate entry
-        self.baud_label = Label(self.form_frame, text="Baud rate:", font=self.prompt_label_font)
-        self.baud_label.pack(anchor=CENTER)
-        self.baud_entry = Combobox(self.form_frame, font=self.prompt_entry_font)
-        self.baud_entry['values'] = WelcomeScreen.BAUD_OPTIONS
-        self.baud_entry['state'] = 'readonly'
-        if self.settings.baud is not None:
-            self.baud_entry.set(str(self.settings.baud))
-        self.baud_entry.pack(anchor=CENTER)
-        # submit button
-        self.submit_button = Button(self.form_frame, text="Csatlakozás", command=self.connect, font=('Arial', 18, 'bold'))
-        self.submit_button.pack(anchor=CENTER, pady=10)
-        self.form_frame.pack()
+        self.form_root = Frame(self.root)
+        # Device list
+        self.device_list_holder = Frame(self.form_root)
+        self.canvas = Canvas(self.device_list_holder, borderwidth=0, background="#ffffff", height=250)
+        self.device_list_frame = Frame(self.canvas, background="#ffffff")
+        vsb = Scrollbar(self.device_list_holder, orient="vertical", command=self.canvas.yview)
+        self.canvas.configure(yscrollcommand=vsb.set)
+        vsb.pack(side="right", fill="y")
+        self.canvas.pack(side="left", fill="both", expand=True)
+        self.canvas.create_window((4, 4), window=self.device_list_frame, anchor="nw")
+        self.device_list_frame.bind("<Configure>", lambda event: self.on_frame_config())
+        self.device_items = []
+        for di in range(len(self.devices)):
+            device = DeviceItem(self.device_list_frame, self.devices[di],
+                                lambda event: self.connect(di), lambda event: self.load_recording(di),
+                                lambda event: self.update_inspector(di))
+            device.grid(row=di, column=0)
+            self.device_items.append(device)
+        self.device_list_frame.pack()
+        self.device_list_holder.grid(row=0, column=0)
 
-    def connect(self):
+        # Device inspector / editor
+        self.inspector_frame = Frame(self.form_root)
+        self.name_field = EditableLabel(self.inspector_frame, "Name:", self.devices[self.current_device].name,
+                                        lambda val: self.modify_device_field("name", val))
+        self.name_field.pack()
+        self.port_field = EditableLabel(self.inspector_frame, "Serial Port:", self.devices[self.current_device].port,
+                                        lambda val: self.modify_device_field("port", val))
+        self.port_field.pack()
+        self.baud_field = EditableLabel(self.inspector_frame, "Baud rate:", self.devices[self.current_device].baud,
+                                        lambda val: self.modify_device_field("baud", val))
+        self.baud_field.pack()
+        self.mag_bias = MatrixEntryField(self.inspector_frame, "Magneto bias:",
+                                         (1, 3), self.devices[self.current_device].mag_bias,
+                                         lambda val: self.modify_device_field("mag_bias", val))
+        self.mag_bias.pack()
+        self.mag_scale = MatrixEntryField(self.inspector_frame, "Magneto scale:",
+                                          (3, 3), self.devices[self.current_device].mag_scale,
+                                          lambda val: self.modify_device_field("mag_scale", val))
+        self.mag_scale.pack()
+        self.inspector_frame.grid(row=0, column=1)
+        self.form_root.pack()
+
+    def update_inspector(self, device_idx):
+        self.current_device = device_idx
+        device = self.devices[self.current_device]
+        self.name_field.set_value(device.name)
+        self.port_field.set_value(device.name)
+        self.baud_field.set_value(device.name)
+
+    def modify_device_field(self, field, value):
+        if field == "name":
+            import os
+            os.remove(f"{Device.get_settings_dir()}/{self.devices[self.current_device].name}.device")
+        self.devices[self.current_device].__dict__[field] = value
+        self.devices[self.current_device].save()
+        if field in ["name", "port", "baud"]:
+            self.device_items[self.current_device].update_device(self.devices[self.current_device])
+
+    def on_frame_config(self):
+        """Reset the scroll region to encompass the inner frame"""
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def connect(self, device_index):
         """
         Ellenőrzi a beküldött adatok helyességét, elmenti és tuvábbküldi azokat
         """
@@ -134,7 +262,7 @@ class WelcomeScreen(Screen):
         # pass params
         self.connecting_data_setter({"type": "serial", "data": (serial_port, int(baud_rate))})
 
-    def load_recording(self):
+    def load_recording(self, device_index):
         path = filedialog.askopenfilename(defaultextension="*.txt", filetypes=[("Plain Recording", "*.txt")],
                                           title="Open a recording", parent=self.root)
         self.connecting_data_setter({"type": "recording", "data": (path)})
@@ -196,7 +324,8 @@ class ConnectingScreen(Screen):
             is_error = True
         except UnsupportedProtocolError:
             # Nem támogatott eszköz kezelése
-            showerror(ConnectingScreen.ERRORBOX_TITLE, "Az eszköz ismeretlen protokollt használ! Ellenőrizd, hogy jó portot adtál-e meg!")
+            showerror(ConnectingScreen.ERRORBOX_TITLE,
+                      "Az eszköz ismeretlen protokollt használ! Ellenőrizd, hogy jó portot adtál-e meg!")
             is_error = True
         # A hibák, illetve a teszt végének kezelése
         if is_error or self.completed_responses == 5:
