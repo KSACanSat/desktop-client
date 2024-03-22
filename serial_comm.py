@@ -61,33 +61,37 @@ class UnsupportedProtocolError(IOError):
 
 class SerialStream(Stream):
     """
-    A soros kommunikációt kezelő UI-safe osztály
-    (olyan szintje a soros kommunikáció vezérlésének, ami nem blokkolja az ablakainkat)
+    Stream implementation for serial communication.
+    :see: Stream
     """
-    def __init__(self, port, baud_rate):
+    def __init__(self, device):
         """
-        :param port: Az OS által kirendelt soros port
-        :param baud_rate: A földi állomáson megadott baud rate
-
-        **TODO: Kapcsolódási hibák jelzése a UI szintjén (#2)**
+        Parameters
+        ----------
+        device: device.Device
+            The device to connect to
         """
-        self.conn = Serial(port, baud_rate)
-        self.thread = SerialThread(self.conn, self.data_receiver)
+        self.conn = Serial(device.port, device.baud)
+        self.thread = SerialThread(self.conn, self.__data_receiver)
         self.info = {}
 
-    def data_receiver(self, data):
+    def __data_receiver(self, data):
         """
-        A soros kommunikációs szál callbackja.
-        :param data: A `SerialThread` által beolvasott adat
+        Callback for `self.thread`
+        Parameters
+        ----------
+        data: bytearray
+            The unprocessed serial data
         """
         self.info = data.decode('utf-8')
 
     def get_message(self):
         """
-        A legutóbbi adat lekérdezése ami beérkezett a földi rádióállomásunkról
-        :return: A legutóbbi üzenet formázott változata
+        Fetch the latest data that we received from the serial port
+
+        :returns: The unformatted packet data as string
         """
-        # Ha nincs üzenet, várakozás amíg nem jön egy (0.2 másodpercenként ellenőrzés)
+        # Wait for data if there isn't any ( for 0.2s each try )
         if len(self.info) == 0:
             sleep(0.2)
             return self.get_message()
@@ -98,7 +102,7 @@ class SerialStream(Stream):
 
     def stop(self):
         """
-        A soros kommunikáció leállítója
+        Closes the serial communication
         """
         self.thread.stop()
         self.conn.close()

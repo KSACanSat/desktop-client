@@ -255,34 +255,21 @@ class WelcomeScreen(Screen):
         """Reset the scroll region to encompass the inner frame"""
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
-    def connect(self, device_index):
+    def connect(self, device):
         """
-        Ellenőrzi a beküldött adatok helyességét, elmenti és tuvábbküldi azokat
+        Formats data for app
         """
-        # get connection params
-        serial_port = self.port_entry.get()
-        baud_rate = self.baud_entry.get()
-        # null check
-        is_error = False
-        if serial_port is None or serial_port == "":
-            showerror("Csatlakozás", "Nem adtad meg a soros portot!")
-            is_error = True
-        if baud_rate is None or baud_rate == "":
-            showerror("Csatlakozás", "Nem adtad meg a baud ratet!")
-            is_error = True
-        if is_error:
-            return
-        # save settings
-        self.settings.port = serial_port
-        self.settings.baud = baud_rate
-        self.settings.save()
         # pass params
-        self.connecting_data_setter({"type": "serial", "data": (serial_port, int(baud_rate))})
+        self.connecting_data_setter({"type": "serial", "device": device})
 
-    def load_recording(self, device_index):
+    def load_recording(self, device):
         path = filedialog.askopenfilename(defaultextension="*.txt", filetypes=[("Plain Recording", "*.txt")],
                                           title="Open a recording", parent=self.root)
-        self.connecting_data_setter({"type": "recording", "data": (path)})
+        import os
+        if not os.path.isfile(path):
+            showerror("Error!", "Bad path! (Not a file)")
+            return
+        self.connecting_data_setter({"type": "recording", "path": path, "device": device})
 
 
 class ConnectingScreen(Screen):
@@ -298,7 +285,7 @@ class ConnectingScreen(Screen):
         :param on_device_passes Az ellenőrzésen átment kapcsolatot fogadó függvény
         """
         super().__init__(root_wnd, "Connecting...")
-        self.data = {}
+        self.device = None
         self.serial_conn = None
         self.completed_responses = 0
         self.on_device_passes = on_device_passes
@@ -310,47 +297,46 @@ class ConnectingScreen(Screen):
         self.progressbar = Progressbar(self.root, orient="horizontal", mode="indeterminate", length=180)
         self.progressbar.pack(anchor=CENTER, pady=10)
 
-    def set_data(self, port, baud):
+    def set_data(self, device):
         """
-        Fogadja a tesztelendó kapcsolat adatait és elindítja az ellenőrzést.
-        :param port A soros port
-        :param baud A baud rate
+        Receives a device and checks if it is connected
+        :param device The serial device object
         """
-        self.data = {"port": port, "baud": baud}
-        self.title_text.set(f"Csatlakozás a {self.data['port']} port eszközéhez...")
+        self.device = device
+        self.title_text.set(f"Csatlakozás a {self.device.port} port eszközéhez...")
         self.progressbar.start()
         self.query_device()
 
     def query_device(self):
         """
-        Az kapcsolatot ellenőrző függvény.
-        Először is inicializálja a soros kapcsolatot, majd 5 egymást követő alkalommal megpróbál adatot lekérni az eszköztől.
-        Ha ez sikerült, a program elküldi a `self.on_device_passes` callbackben meghatárzott függvénynek a kapcsolatot.
+        The connection checker.
+        First it initializes the serial connection, then tries to retrieve any kind of data 5 times.
+        If this succeeded the program calls the callback stored in `self.on_device_passes` with the working serial connection.
         """
         is_error = False
         try:
-            # Kapcsolat inicializációja, ha még nincs meg
+            # Inits the serial connection
             if self.serial_conn is None:
-                self.serial_conn = SerialStream(self.data['port'], self.data['baud'])
-            # Adat lekérdezése
+                self.serial_conn = SerialStream(self.device)
+            # Query for data
             self.serial_conn.get_message()
             self.completed_responses += 1
         except SerialException:
-            # A soros kapcsolatban létrejött hiba kezelése
+            # Handling serial errors
             showerror(ConnectingScreen.ERRORBOX_TITLE, "A megadott porton nem található eszköz!")
             is_error = True
         except UnsupportedProtocolError:
-            # Nem támogatott eszköz kezelése
+            # Handling unsupported things
             showerror(ConnectingScreen.ERRORBOX_TITLE,
                       "Az eszköz ismeretlen protokollt használ! Ellenőrizd, hogy jó portot adtál-e meg!")
             is_error = True
-        # A hibák, illetve a teszt végének kezelése
+        # Error and finish handling
         if is_error or self.completed_responses == 5:
-            # Ablak elrejtése
+            # Hiding the window
             self.progressbar.stop()
             self.hide()
-            # Siker esetén a program továbbküldése
+            # In case of success send over the connection
             if not is_error:
-                self.on_device_passes(self.serial_conn)
-            return  # Annak megakadályozása, hogy a teszt tovább fusson
-        self.root.after(200, self.query_device)  # A következő teszt ütemezése
+                self.on_device_passes({"stream": self.serial_conn, "device": self.device})
+            return  # Stop the test
+        self.root.after(200, self.query_device)  # Schedule the next test

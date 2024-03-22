@@ -7,26 +7,20 @@ from discalculia import *
 
 
 class App(object):
+    """
+    The main instance of KSAgent.
+    For access call `get_instance`!
+    """
     _instance = None
-    """
-    Az applikációt megtestesítő statikus osztály.
-    A hozzáféréshez hívd meg a `get_instance` függvényt!
-    """
-
-    @classmethod
-    def new(cls):
-        """
-        Létrehoz egy új példányt az appból, ha még nem létezett volna...
-        """
-        if cls._instance is None:
-            cls._instance = App()
 
     @classmethod
     def get_instance(cls):
         """
-        Lekérdezi az osztály pélányát...
+        Returns:
+            The instance of the application.
         """
-        cls.new()
+        if cls._instance is None:
+            cls._instance = App()
         return cls._instance
 
     def __init__(self):
@@ -34,8 +28,8 @@ class App(object):
         self.last_time = 0
         # UI setup
         self.schedule_window = Tk()
-        self.welcome_window = WelcomeScreen(self.schedule_window, self.attempt_connect, self.stop)
-        self.connect_window = ConnectingScreen(self.schedule_window, self.set_serial_conn)
+        self.welcome_window = WelcomeScreen(self.schedule_window, self.connection_data_handler, self.stop)
+        self.connect_window = ConnectingScreen(self.schedule_window, self.stream_setter)
         self.raw_window = RawInfoScreen(self.schedule_window, self.stop, self.set_path)
         self.result = ResultScreen(self.schedule_window, 3, 2,
                                    [Diagram(2, 0, "Temperature", [0, 11]),
@@ -50,59 +44,69 @@ class App(object):
         self.discalculia.add_task(PressureAltCalcTask("press", "temp", "alt"))
         self.gps = GPSScreen(self.schedule_window)
 
-    def attempt_connect(self, data):
+    def connection_data_handler(self, data):
         """
-        Elindítja a kapcsolódást kezelő ablakot
-        :param port A soros port
-        :param baud A baud rate
+        Handles the result of `WelcomeScreen`
+        Parameters:
+            data: dict
+                The dict with all the needed (and optional) params which are:
+                    - "type": str - can be serial or recording based on the creating stream
+                    - "device": Device - the selected device object
         """
         if data["type"] == "serial":
-            self.connect_window.set_data(data["data"][0], data["data"][1])
+            self.connect_window.set_data(data["device"])
             self.connect_window.show()
         elif data["type"] == "recording":
-            self.io.set_stream(FileStream(data["data"], "plain"))
-            self.welcome_window.hide()
             self.raw_window.disable_saving()
-            self.raw_window.show()
-            self.result.show()
-            self.gps.show()
-            self.schedule_window.after(10, self.query_serial)
-            self.schedule_window.after(20, self.query_results)
+            self.stream_setter({"stream": FileStream(data["path"]), "device": data["device"]})
 
-    def set_serial_conn(self, serial: SerialStream):
+    def stream_setter(self, stream_data):
         """
-        Beállítja a soros kommunikációt és elindítja a táblázatot.
-        :param serial A soros kommunikáció
+        Sets the stream for IOManager and inits the "main" setup.
+        Parameters:
+            stream_data: dict
+                The nature stream data to be passed to the IOManager
         """
-        self.io.set_stream(serial)
+        self.io.set_stream(stream_data)
         self.welcome_window.hide()
         self.raw_window.show()
         self.result.show()
         self.gps.show()
-        self.query_serial()
+        self.schedule_window.after(10, self.query_packets)
+        self.schedule_window.after(20, self.query_results)
 
     def set_path(self, path):
+        """
+        Callback for recording path setting.
+        Parameters:
+            path: str
+                The path of recording. Passed to the IOManager.
+        """
         self.io.set_path(path)
 
-    def query_serial(self):
+    def query_packets(self):
         """
-            A soros kommunikáció eredményeinek megjelenése
+        Handles the nature packets.
+        Gets it, shows in the raw result window and schedule it in discalculia
         """
         message = self.io.get_message()
         if message[0] > self.last_time:
             self.raw_window.add_row(message)
             self.discalculia.process_packet(message)
             self.last_time = message[0]
-        self.schedule_window.after(200 if self.io.stream.get_type == "serial" else 20, self.query_serial)
+        self.schedule_window.after(200 if self.io.stream.get_type == "serial" else 20, self.query_packets)
 
     def query_results(self):
+        """
+        Handles the done discalculia tasks.
+        """
         for results in self.discalculia.get_done_packets():
             self.result.add_result([val for val in results.values()])
         self.schedule_window.after(20, self.query_results)
 
     def show(self):
         """
-            Az appot elindító kód
+        Starts the app with the "Welcome" setup.
         """
         self.schedule_window.withdraw()
         self.raw_window.hide()
@@ -113,7 +117,7 @@ class App(object):
 
     def stop(self, close_id):
         """
-            A leállító kód
+        Shut-down logic
         """
         try:
             self.schedule_window.destroy()
