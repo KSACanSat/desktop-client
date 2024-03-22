@@ -17,6 +17,7 @@ class DeviceItem(Frame):
     def __init__(self, master, device, connect_callback, file_callback, more_callback, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         self.photos = []
+        self.device = device
         self.logo = self.__photo("assets/logo.png", (64, 64))
         self.logo.grid(row=0, column=0)
         self.info_frame = Frame(self, width=250)
@@ -39,7 +40,7 @@ class DeviceItem(Frame):
 
     def __action_button(self, master, icon_path, command):
         btn = self.__photo(icon_path, (32, 32), "button", master)
-        btn.bind("<Button-1>", command)
+        btn.bind("<Button-1>", lambda _: command(self.device))
         return btn
 
     def __photo(self, path, size, type="label", master=None):
@@ -52,22 +53,24 @@ class DeviceItem(Frame):
             return Label(parent, image=photo, width=8)
 
     def update_device(self, device):
+        self.device = device
         self.name.set(device.name)
         self.path.set(f"{device.port} at speed {device.baud}")
 
 
 class EditableLabel(Frame):
-    def __init__(self, master, label, value, on_change, is_label=True):
+    def __init__(self, master, label, value, on_change, is_label=True, identifier_data: dict=None):
         super().__init__(master)
         self.on_change = on_change
         self.value = value
+        self.id_dict = identifier_data if identifier_data else {}
+
         if is_label:
             self.label = Label(self, text=label)
             self.label.pack()
 
         self.value_label = Label(self, text=value)
         self.value_label.pack()
-
         self.entry = Entry(self)
         self.entry.insert(constants.INSERT, value)
 
@@ -100,7 +103,7 @@ class EditableLabel(Frame):
         """
         new_text = self.entry.get()
         self.value = new_text
-        self.on_change(new_text)
+        self.on_change(new_text, self.id_dict)
         self.entry.pack_forget()
         self.value_label.pack()
         self.value_label.configure(text=new_text)
@@ -122,7 +125,8 @@ class EditableLabel(Frame):
 class MatrixEntryField(Frame):
     def __init__(self, master, label, shape, data, on_change):
         super().__init__(master)
-        self.data = data if len(shape) == 2 and shape[0] > 1 else [data]
+        self.shape = shape
+        self.__validate_data(data)
         self.on_change = on_change
 
         self.label = Label(self, text=label)
@@ -133,13 +137,25 @@ class MatrixEntryField(Frame):
         for i in range(shape[0]):
             for j in range(shape[1]):
                 entry = EditableLabel(self.entry_frame, "", self.data[i][j],
-                                      lambda val: self._on_entry_received(i, j, val), False)
+                                      lambda val, id_data: self._on_entry_received(val, id_data), False,
+                                      {"x": i, "y": j})
                 entry.grid(row=i, column=j)
                 self.entries.append(entry)
+        self.entry_frame.pack()
 
-    def _on_entry_received(self, x, y, value):
-        self.data[x][y] = value
-        self.on_change(value)
+    def __validate_data(self, data):
+        self.data = data if len(self.shape) == 2 and self.shape[0] > 1 else [data]
+        if len(self.data) != self.shape[0] or len(self.data[0]) != self.shape[1]:
+            raise ValueError("Your input matrix is different from the shape you've defined!")
+
+    def _on_entry_received(self, value, id_data):
+        self.data[id_data["x"]][id_data["y"]] = float(value)
+        self.on_change(self.data)
+
+    def set_value(self, data):
+        self.__validate_data(data)
+        for i in range(len(self.entries)):
+            self.entries[i].set_value(self.data[i // self.shape[1]][i % self.shape[1]])
 
 
 class WelcomeScreen(Screen):
@@ -188,24 +204,24 @@ class WelcomeScreen(Screen):
         self.device_list_frame.bind("<Configure>", lambda event: self.on_frame_config())
         self.device_items = []
         for di in range(len(self.devices)):
-            device = DeviceItem(self.device_list_frame, self.devices[di],
-                                lambda event: self.connect(di), lambda event: self.load_recording(di),
-                                lambda event: self.update_inspector(di))
-            device.grid(row=di, column=0)
-            self.device_items.append(device)
+            gui_device = DeviceItem(self.device_list_frame, self.devices[di],
+                                lambda dev: self.connect(dev), lambda dev: self.load_recording(dev),
+                                lambda dev: self.update_inspector(dev))
+            gui_device.grid(row=di, column=0)
+            self.device_items.append(gui_device)
         self.device_list_frame.pack()
         self.device_list_holder.grid(row=0, column=0)
 
         # Device inspector / editor
         self.inspector_frame = Frame(self.form_root)
         self.name_field = EditableLabel(self.inspector_frame, "Name:", self.devices[self.current_device].name,
-                                        lambda val: self.modify_device_field("name", val))
+                                        lambda val, _: self.modify_device_field("name", val))
         self.name_field.pack()
         self.port_field = EditableLabel(self.inspector_frame, "Serial Port:", self.devices[self.current_device].port,
-                                        lambda val: self.modify_device_field("port", val))
+                                        lambda val, _: self.modify_device_field("port", val))
         self.port_field.pack()
         self.baud_field = EditableLabel(self.inspector_frame, "Baud rate:", self.devices[self.current_device].baud,
-                                        lambda val: self.modify_device_field("baud", val))
+                                        lambda val, _: self.modify_device_field("baud", val))
         self.baud_field.pack()
         self.mag_bias = MatrixEntryField(self.inspector_frame, "Magneto bias:",
                                          (1, 3), self.devices[self.current_device].mag_bias,
@@ -218,12 +234,13 @@ class WelcomeScreen(Screen):
         self.inspector_frame.grid(row=0, column=1)
         self.form_root.pack()
 
-    def update_inspector(self, device_idx):
-        self.current_device = device_idx
-        device = self.devices[self.current_device]
+    def update_inspector(self, device):
+        self.current_device = self.devices.index(device)
         self.name_field.set_value(device.name)
-        self.port_field.set_value(device.name)
-        self.baud_field.set_value(device.name)
+        self.port_field.set_value(device.port)
+        self.baud_field.set_value(device.baud)
+        self.mag_bias.set_value(device.mag_bias)
+        self.mag_scale.set_value(device.mag_scale)
 
     def modify_device_field(self, field, value):
         if field == "name":
