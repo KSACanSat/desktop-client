@@ -6,8 +6,7 @@ from serial_comm import SerialStream, UnsupportedProtocolError
 from PIL.ImageTk import PhotoImage
 from PIL import Image
 from serial.serialutil import SerialException
-import os
-import json
+from device import Device
 
 """
 Az indítóképernyőhöz tartozó ablakok...
@@ -70,7 +69,8 @@ class WelcomeScreen(Screen):
         """
         super().__init__(root_wnd, "KSAgent Start", on_close)
         self.connecting_data_setter = connecting_data_setter
-        self.settings = ConnectionSettings.load()
+        self.devices = Device.load_devices()
+        self.current_device = 0
         self.root.geometry("500x400")
         self.root.update()
         #  Menu part
