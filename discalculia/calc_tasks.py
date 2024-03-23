@@ -13,6 +13,6 @@ class PressureAltCalcTask(Task):
         pressure = data[self.pressure_label]
         if self.initial_pressure is None:
             self.initial_pressure = pressure
-        alt = -29.2258 * (273 + data[self.temperature_label]) * math.log(pressure / self.initial_pressure)
+        alt = -153.8461 * 288 * (1 - (pressure / self.initial_pressure) ** (-1/5.268))
         data[self.alt_label] = alt
         return data
