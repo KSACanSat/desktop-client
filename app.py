@@ -90,7 +90,7 @@ class App(object):
         Gets it, shows in the raw result window and schedule it in discalculia
         """
         message = self.io.get_message()
-        if message[0] > self.last_time:
+        if message[0] != self.last_time:
             self.raw_window.add_row(message)
             self.discalculia.process_packet(message)
             self.last_time = message[0]
