@@ -74,7 +74,8 @@ class SerialStream(Stream):
         """
         self.conn = Serial(device.port, device.baud)
         self.thread = SerialThread(self.conn, self.__data_receiver)
-        self.info = {}
+        self.rex = re.compile(r"[0-9]|\t|\.|-")
+        self.info = ""
 
     def __data_receiver(self, data):
         """

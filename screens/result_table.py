@@ -26,12 +26,22 @@ class ResultTable(Frame):
         self.scrollbar.config(command=self.table_holder.yview)
 
         # A táblázat oszlopainak konfigurációja
-        self.table_holder['columns'] = [f"_{column}" for column in columns] # oszlopok hozzáadása
+        self.table_holder['columns'] = [f"_{column}" for column in columns]  # oszlopok hozzáadása
         self.table_holder.column("#0", width=0, stretch=NO)
         self.table_holder.heading("#0", text="", anchor=CENTER)
+        self.table_holder.pack()
+
         for column_id in columns:
-            self.table_holder.column(f"_{column_id}", width=80)
+            self.table_holder.column(f"_{column_id}", width=40)
             self.table_holder.heading(f"_{column_id}", text=column_id)
+
+    def config_columns(self, columns):
+        self.column_count = len(columns)
+        self.table_holder["columns"] = columns
+        for ci in range(0, len(columns)):
+            self.table_holder.column(column=str(ci), width=60)
+            self.table_holder.heading(column=str(ci), text=columns[ci])
+        self.table_holder.pack()
 
     def add_data(self, row: list):
         """

@@ -5,14 +5,17 @@ from screens.result_renderer.diagram import Diagram
 
 
 class ResultScreen(Screen):
-    def __init__(self, root, rows, columns, diagrams, size_modifiers=(3.5, 2)):
+    def __init__(self, root, rows, columns, size_modifiers=(3.5, 2)):
         super().__init__(root, "Results")
         self.shape = (rows, columns)
         self.figure = Figure(figsize=(columns * size_modifiers[0], rows * size_modifiers[1]), dpi=100)
-        self.diagrams = diagrams
+        self.diagrams = []
         self.canvas = FigureCanvasTkAgg(self.figure, master=self.root)
         self.canvas.draw()
         self.canvas.get_tk_widget().pack()
+
+    def add_diagram(self, diagram):
+        self.diagrams.append(diagram)
 
     def add_result(self, result):
         self.figure.clear()

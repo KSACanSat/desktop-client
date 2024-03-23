@@ -20,7 +20,7 @@ class RawInfoScreen(Screen):
         self.menu = menu.generate_menu(self.root)
         self.root.config(menu=self.menu)
         # ## Table Setup
-        self.table = ResultTable(self.root, ["Time", "ID", "Gyro X", "Gyro Y", "Gyro Z", "Mag X", "Mag Y", "Mag Z", "Acc X", "Acc Y", "Acc Z","Temp", "Press", "Lat", "Long"], "time")
+        self.table = ResultTable(self.root, ["ID", "Delta Time", "Temp", "Pressure"], "time")
         self.table.pack()
 
     def add_row(self, row):
@@ -30,6 +30,9 @@ class RawInfoScreen(Screen):
         """
         if self.visible:
             self.table.add_data(row)
+
+    def update_table_columns(self, new_columns):
+        self.table.config_columns(new_columns)
 
     def disable_saving(self):
         self.menu.entryconfig("File", state="disabled")
