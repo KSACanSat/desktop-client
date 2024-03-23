@@ -59,20 +59,20 @@ class DeviceItem(Frame):
 
 
 class EditableLabel(Frame):
-    def __init__(self, master, label, value, on_change, is_label=True, identifier_data: dict=None):
+    def __init__(self, master, label, value, on_change, is_label=True, identifier_data: dict = None):
         super().__init__(master)
         self.on_change = on_change
-        self.value = value
+        self.value = value if not value else "None"
         self.id_dict = identifier_data if identifier_data else {}
 
         if is_label:
             self.label = Label(self, text=label)
             self.label.pack()
 
-        self.value_label = Label(self, text=value)
+        self.value_label = Label(self, text=self.value)
         self.value_label.pack()
         self.entry = Entry(self)
-        self.entry.insert(constants.INSERT, value)
+        self.entry.insert(constants.INSERT, self.value)
 
         self.value_label.bind("<Button-1>", self.__on_click)
         self.entry.bind("<Button-1>", lambda event: self.entry.focus_set())
@@ -102,6 +102,8 @@ class EditableLabel(Frame):
         Reset to label, but updating its value to the new one (and call the change callback)
         """
         new_text = self.entry.get()
+        if new_text == "None":
+            return
         self.value = new_text
         self.on_change(new_text, self.id_dict)
         self.entry.pack_forget()
@@ -116,10 +118,10 @@ class EditableLabel(Frame):
         val: str
             The new value for the UI
         """
-        self.value = val
-        self.value_label.configure(text=val)
+        self.value = "None" if val == "" else val
+        self.value_label.configure(text=self.value)
         self.entry.delete(0, constants.END)
-        self.entry.insert(0, val)
+        self.entry.insert(0, self.value)
 
 
 class MatrixEntryField(Frame):
@@ -144,6 +146,9 @@ class MatrixEntryField(Frame):
         self.entry_frame.pack()
 
     def __validate_data(self, data):
+        if not data:
+            self.data = [[0 for __ in range(self.shape[1])] for _ in range(self.shape[0])]
+            return
         self.data = data if len(self.shape) == 2 and self.shape[0] > 1 else [data]
         if len(self.data) != self.shape[0] or len(self.data[0]) != self.shape[1]:
             raise ValueError("Your input matrix is different from the shape you've defined!")
@@ -178,8 +183,8 @@ class WelcomeScreen(Screen):
         self.root.geometry("500x400")
         self.root.update()
         #  Menu part
-        menu = MenuItem("File", children=[
-            MenuItem("Open a recording", command=self.load_recording)
+        menu = MenuItem("Device", children=[
+            MenuItem("New device", command=self.create_device)
         ])
         self.menubar = menu.generate_menu(self.root)
         self.root.config(menu=self.menubar)
@@ -205,8 +210,8 @@ class WelcomeScreen(Screen):
         self.device_items = []
         for di in range(len(self.devices)):
             gui_device = DeviceItem(self.device_list_frame, self.devices[di],
-                                lambda dev: self.connect(dev), lambda dev: self.load_recording(dev),
-                                lambda dev: self.update_inspector(dev))
+                                    lambda dev: self.connect(dev), lambda dev: self.load_recording(dev),
+                                    lambda dev: self.update_inspector(dev))
             gui_device.grid(row=di, column=0)
             self.device_items.append(gui_device)
         self.device_list_frame.pack()
@@ -245,7 +250,9 @@ class WelcomeScreen(Screen):
     def modify_device_field(self, field, value):
         if field == "name":
             import os
-            os.remove(f"{Device.get_settings_dir()}/{self.devices[self.current_device].name}.device")
+            device_path = f"{Device.get_settings_dir()}/{self.devices[self.current_device].name}.device"
+            if os.path.exists(device_path):
+                os.remove(device_path)
         self.devices[self.current_device].__dict__[field] = value
         self.devices[self.current_device].save()
         if field in ["name", "port", "baud"]:
@@ -254,6 +261,16 @@ class WelcomeScreen(Screen):
     def on_frame_config(self):
         """Reset the scroll region to encompass the inner frame"""
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def create_device(self):
+        self.devices.insert(0, Device("Unknown Device", "", "", [], []))
+        self.device_items.insert(0, DeviceItem(self.device_list_frame, self.devices[0],
+                                               lambda dev: self.connect(dev), lambda dev: self.load_recording(dev),
+                                               lambda dev: self.update_inspector(dev)))
+        for dev_item in self.device_items: dev_item.grid_forget()
+        for dii in range(len(self.device_items)):
+            self.device_items[dii].grid(row=dii, column=0)
+        self.update_inspector(self.devices[0])
 
     def connect(self, device):
         """
