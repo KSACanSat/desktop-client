@@ -182,7 +182,6 @@ class WelcomeScreen(Screen):
         self.connecting_data_setter = connecting_data_setter
         self.devices = Device.load_devices()
         self.current_device = 0
-        self.root.geometry("500x400")
         self.root.update()
         #  Menu part
         menu = MenuItem("Device", children=[
