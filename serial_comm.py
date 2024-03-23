@@ -2,6 +2,7 @@ from threading import Thread
 from serial import Serial
 from time import sleep
 from io_stream import Stream
+import re
 
 """
 A soros kommunikáció kezeléséhez tartozó osztályok helye.
@@ -83,7 +84,7 @@ class SerialStream(Stream):
         data: bytearray
             The unprocessed serial data
         """
-        self.info = data.decode('utf-8')
+        self.info = str(data)
 
     def get_message(self):
         """
@@ -91,11 +92,17 @@ class SerialStream(Stream):
 
         :returns: The unformatted packet data as string
         """
-        # Wait for data if there isn't any ( for 0.2s each try )
-        if len(self.info) == 0:
+        # Ha nincs üzenet, várakozás amíg nem jön egy (0.2 másodpercenként ellenőrzés)
+        if not self.info:
             sleep(0.2)
             return self.get_message()
-        return self.info
+        packet = self.info.replace("'", "").replace("\\r\\n", "").replace("\\t", "\t")[1:]
+        regex = ''.join(self.rex.findall(packet))
+        if regex != packet:
+            print("Corrupted packet:", packet)
+            self.info = ""
+            return self.get_message()
+        return packet
 
     def get_type(self):
         return "serial"

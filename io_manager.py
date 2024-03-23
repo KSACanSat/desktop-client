@@ -1,6 +1,6 @@
-from device import Device
 from io_stream import Stream
 import _io
+from device import Device
 
 
 class FileStream(Stream):
@@ -78,14 +78,12 @@ class IOManager:
         Returns:
             a list of float - aka packet
         """
-
         raw_message = self.stream.get_message()
-        # TODO: Packet validating (might be better on stream side)
-        # Writes into the log if we set it previously (using the `set_path` method)
+        # Writes into the recording if set it earlier (using the `set_path` method)
         if self.file is not None:
             self.file.write(raw_message)
-        # Decode the packet
-        raw_pairs = raw_message.split(";")
+
+        raw_pairs = raw_message.split("\t")
         return [float(raw_pair) if "\n" not in raw_pair and len(raw_pair) > 0 else 0.00 for raw_pair in raw_pairs][:-1]
 
     def stop(self):
