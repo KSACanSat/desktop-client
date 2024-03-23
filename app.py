@@ -59,6 +59,8 @@ class App(object):
             self.welcome_window.hide()
             self.raw_window.disable_saving()
             self.raw_window.show()
+            self.result.show()
+            self.gps.show()
             self.query_serial()
 
     def set_serial_conn(self, serial: SerialStream):
@@ -69,6 +71,8 @@ class App(object):
         self.io.set_stream(serial)
         self.welcome_window.hide()
         self.raw_window.show()
+        self.result.show()
+        self.gps.show()
         self.query_serial()
 
     def set_path(self, path):
@@ -79,11 +83,11 @@ class App(object):
             A soros kommunikáció eredményeinek megjelenése
         """
         message = self.io.get_message()
-        if message[0] > self.last_time:
+        if message[0] != self.last_time:
             self.raw_window.add_row(message)
-            self.result.add_result(message)
+            #self.result.add_result(message)
             self.last_time = message[0]
-        self.schedule_window.after(200 if self.io.stream.get_type == "serial" else 20, self.query_serial)
+        self.schedule_window.after(100 if self.io.stream.get_type == "serial" else 20, self.query_serial)
 
     def show(self):
         """
@@ -91,6 +95,7 @@ class App(object):
         """
         self.schedule_window.withdraw()
         self.raw_window.hide()
+        self.result.hide()
         self.connect_window.hide()
         self.welcome_window.show()
         self.schedule_window.mainloop()
@@ -104,5 +109,6 @@ class App(object):
         except TclError:
             pass
         self.io.stop()
+        self.gps.close()
         if close_id != "raw_window":
             self.raw_window.close()

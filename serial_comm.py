@@ -2,6 +2,7 @@ from threading import Thread
 from serial import Serial
 from time import sleep
 from io_stream import Stream
+import re
 
 """
 A soros kommunikáció kezeléséhez tartozó osztályok helye.
@@ -73,14 +74,15 @@ class SerialStream(Stream):
         """
         self.conn = Serial(port, baud_rate)
         self.thread = SerialThread(self.conn, self.data_receiver)
-        self.info = {}
+        self.rex = re.compile("[0-9]|\t|\.|-")
+        self.info = ""
 
-    def data_receiver(self, data):
+    def data_receiver(self, data: bytes):
         """
         A soros kommunikációs szál callbackja.
         :param data: A `SerialThread` által beolvasott adat
         """
-        self.info = data.decode('utf-8')
+        self.info = str(data)
 
     def get_message(self):
         """
@@ -88,10 +90,16 @@ class SerialStream(Stream):
         :return: A legutóbbi üzenet formázott változata
         """
         # Ha nincs üzenet, várakozás amíg nem jön egy (0.2 másodpercenként ellenőrzés)
-        if len(self.info) == 0:
+        if not self.info:
             sleep(0.2)
             return self.get_message()
-        return self.info
+        packet = self.info.replace("'", "").replace("\\r\\n", "").replace("\\t", "\t")[1:]
+        regex = ''.join(self.rex.findall(packet))
+        if regex != packet:
+            print("Corrupted packet:", packet)
+            self.info = ""
+            return self.get_message()
+        return packet
 
     def get_type(self):
         return "serial"

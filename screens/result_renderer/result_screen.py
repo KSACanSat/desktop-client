@@ -6,7 +6,7 @@ from screens.result_renderer.diagram import Diagram
 
 class ResultScreen(Screen):
     def __init__(self, root, rows, columns, diagrams, size_modifiers=(3.5, 2)):
-        super().__init__(root, None)
+        super().__init__(root, "Results")
         self.shape = (rows, columns)
         self.figure = Figure(figsize=(columns * size_modifiers[0], rows * size_modifiers[1]), dpi=100)
         self.diagrams = diagrams
@@ -27,3 +27,6 @@ class ResultScreen(Screen):
                         axes[ri] = self.diagrams[di].draw(axes[ri], result)
         self.canvas.draw()
         self.canvas.flush_events()
+
+    def close(self):
+        self.root.destroy()

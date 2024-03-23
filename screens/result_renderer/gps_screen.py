@@ -47,6 +47,7 @@ class FlaskThread(threading.Thread):
         self.server.serve_forever()
 
     def shutdown(self):
+        self.server.server_close()
         self.server.shutdown()
 
 
@@ -72,6 +73,7 @@ class WebsocketThread(threading.Thread):
         asyncio.run(self._websocket_entrypoint())
 
     def stop(self):
+        asyncio.get_event_loop().close()
         asyncio.get_event_loop().stop()
 
 
@@ -81,11 +83,12 @@ class GPSScreen(Screen):
         self.web_server = FlaskThread()
         self.websocket_server = WebsocketThread()
         self.root.withdraw()
-        self.show()
 
     def show(self):
         self.visible = True
+        self.websocket_server.daemon = True
         self.web_server.start()
+        self.websocket_server.daemon = True
         self.websocket_server.start()
         webbrowser.open("http://localhost:5000/start")
 
@@ -94,7 +97,6 @@ class GPSScreen(Screen):
         self.websocket_server.send(" ".join([str(data) for data in [packet[0], packet[packet_length-2], packet[packet_length-1]]]))
 
     def hide(self):
-        # TODO: Send window close command
         self.visible = False
 
     def close(self):
