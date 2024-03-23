@@ -16,7 +16,7 @@ class ResultTable(Frame):
         Frame.__init__(self, parent)
         self.id_column = id_column
         self.column_count = len(columns)
-
+        self.counter = 0
         # UI
         #  Görgő és a tábla felállítása
         self.scrollbar = Scrollbar(self)
@@ -38,6 +38,7 @@ class ResultTable(Frame):
             A táblázat adatainak feltöltője
             :parameter row: A feltöltendő új sor listaként
         """
-        self.table_holder.insert(parent='', index=0, iid=row[0], text='',
-                                 values=["error" if i >= len(row) else row[i] if row[i] != -1 else "error" for i in range(self.column_count)])
+        self.table_holder.insert(parent='', index=0, iid=self.counter, text='',
+                                 values=["error" if i >= len(row) else row[i] for i in range(self.column_count)])
         self.table_holder.pack()
+        self.counter += 1

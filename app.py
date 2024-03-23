@@ -83,11 +83,11 @@ class App(object):
             A soros kommunikáció eredményeinek megjelenése
         """
         message = self.io.get_message()
-        if message[0] > self.last_time:
+        if message[0] != self.last_time:
             self.raw_window.add_row(message)
-            self.result.add_result(message)
+            #self.result.add_result(message)
             self.last_time = message[0]
-        self.schedule_window.after(200 if self.io.stream.get_type == "serial" else 20, self.query_serial)
+        self.schedule_window.after(100 if self.io.stream.get_type == "serial" else 20, self.query_serial)
 
     def show(self):
         """
