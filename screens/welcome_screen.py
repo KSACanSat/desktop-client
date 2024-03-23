@@ -14,7 +14,7 @@ Az indítóképernyőhöz tartozó ablakok...
 
 
 class DeviceItem(Frame):
-    def __init__(self, master, device, connect_callback, file_callback, more_callback, *args, **kwargs):
+    def __init__(self, master, device, connect_cl, file_cl, more_cl, delete_cl, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         self.photos = []
         self.device = device
@@ -29,12 +29,14 @@ class DeviceItem(Frame):
         self.path_label.pack()
         self.info_frame.grid(row=0, column=1)
         self.action_frame = Frame(self, width=128)
-        self.connect_btn = self.__action_button(self.action_frame, "assets/connect.png", connect_callback)
+        self.connect_btn = self.__action_button(self.action_frame, "assets/connect.png", connect_cl)
         self.connect_btn.grid(row=0, column=0)
-        self.load_btn = self.__action_button(self.action_frame, "assets/load.png", file_callback)
+        self.load_btn = self.__action_button(self.action_frame, "assets/load.png", file_cl)
         self.load_btn.grid(row=0, column=1)
-        self.more_btn = self.__action_button(self.action_frame, "assets/menu.png", more_callback)
+        self.more_btn = self.__action_button(self.action_frame, "assets/menu.png", more_cl)
         self.more_btn.grid(row=1, column=0)
+        self.del_btn = self.__action_button(self.action_frame, "assets/delete.png", delete_cl)
+        self.del_btn.grid(row=1, column=1)
         self.action_frame.grid(row=0, column=2)
         self.update_device(device)
 
@@ -211,7 +213,7 @@ class WelcomeScreen(Screen):
         for di in range(len(self.devices)):
             gui_device = DeviceItem(self.device_list_frame, self.devices[di],
                                     lambda dev: self.connect(dev), lambda dev: self.load_recording(dev),
-                                    lambda dev: self.update_inspector(dev))
+                                    lambda dev: self.update_inspector(dev), lambda dev: self.delete_device(dev))
             gui_device.grid(row=di, column=0)
             self.device_items.append(gui_device)
         self.device_list_frame.pack()
@@ -249,28 +251,41 @@ class WelcomeScreen(Screen):
 
     def modify_device_field(self, field, value):
         if field == "name":
-            import os
-            device_path = f"{Device.get_settings_dir()}/{self.devices[self.current_device].name}.device"
-            if os.path.exists(device_path):
-                os.remove(device_path)
+            self.__remove_device(self.devices[self.current_device])
         self.devices[self.current_device].__dict__[field] = value
         self.devices[self.current_device].save()
         if field in ["name", "port", "baud"]:
             self.device_items[self.current_device].update_device(self.devices[self.current_device])
 
+    def __remove_device(self, device):
+        import os
+        device_path = f"{Device.get_settings_dir()}/{device.name}.device"
+        if os.path.exists(device_path):
+            os.remove(device_path)
+
     def on_frame_config(self):
         """Reset the scroll region to encompass the inner frame"""
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def __update_device_list(self):
+        for dev_item in self.device_items: dev_item.grid_forget()
+        for dii in range(len(self.device_items)):
+            self.device_items[dii].grid(row=dii, column=0)
+        self.update_inspector(self.devices[0])
 
     def create_device(self):
         self.devices.insert(0, Device("Unknown Device", "", "", [], []))
         self.device_items.insert(0, DeviceItem(self.device_list_frame, self.devices[0],
                                                lambda dev: self.connect(dev), lambda dev: self.load_recording(dev),
-                                               lambda dev: self.update_inspector(dev)))
-        for dev_item in self.device_items: dev_item.grid_forget()
-        for dii in range(len(self.device_items)):
-            self.device_items[dii].grid(row=dii, column=0)
-        self.update_inspector(self.devices[0])
+                                               lambda dev: self.update_inspector(dev), lambda dev: self.delete_device(dev)))
+        self.__update_device_list()
+
+    def delete_device(self, device):
+        self.device_items[self.devices.index(device)].grid_forget()
+        del self.device_items[self.devices.index(device)]
+        self.devices.remove(device)
+        self.__remove_device(device)
+        self.__update_device_list()
 
     def connect(self, device):
         """
