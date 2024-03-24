@@ -1,5 +1,6 @@
-from tkinter import Frame, constants, CENTER, Button, StringVar, filedialog, Canvas, Entry
-from tkinter.ttk import Label, Progressbar, Treeview, Scrollbar
+from collections import deque
+from tkinter import Frame, constants, CENTER, Button, StringVar, filedialog, Canvas, Entry, LabelFrame
+from tkinter.ttk import Label, Progressbar, Scrollbar
 from tkinter.messagebox import showerror
 from screens.screen import Screen, MenuItem
 from serial_comm import SerialStream, UnsupportedProtocolError
@@ -165,17 +166,47 @@ class MatrixEntryField(Frame):
             self.entries[i].set_value(self.data[i // self.shape[1]][i % self.shape[1]])
 
 
+class AccelerationEntry(LabelFrame):
+    def __init__(self, master, device, sensor, on_change):
+        super().__init__(master, text=sensor, borderwidth=1)
+        self.sensor = sensor
+        self.data = device.__dict__[self.sensor]
+        self.on_change = on_change
+
+        self.label = Label(self, text=self.sensor)
+        self.label.pack()
+
+        self.entry_frame = Frame(self)
+        self.scale_entry = EditableLabel(self.entry_frame, "Scale", self.data["scale"],
+                                         lambda val, key: self.__on_entry_changed(val, key["key"]), True, {"key": "scale"})
+        self.scale_entry.grid(row=0, column=0)
+        self.bias_entry = EditableLabel(self.entry_frame, "Bias", self.data["bias"],
+                                        lambda val, key: self.__on_entry_changed(val, key["key"]), True, {"key": "bias"})
+        self.bias_entry.grid(row=0, column=1)
+        self.entry_frame.pack()
+
+    def __on_entry_changed(self, val, key):
+        self.data[key] = float(val)
+        self.on_change(self.data)
+
+    def set_device(self, device):
+        self.data = device.__dict__[self.sensor]
+        self.scale_entry.set_value(self.data["scale"])
+        self.bias_entry.set_value(self.data["bias"])
+
+
 class WelcomeScreen(Screen):
-    """
-    Az indító űrlap
-    """
+    """The Landing screen of the application"""
 
     BAUD_OPTIONS = [300, 600, 1200, 2400, 4800, 9600, 14400, 19200, 28800, 31250, 38400, 57600, 115200]
 
     def __init__(self, root_wnd, connecting_data_setter, on_close):
         """
-        :param root_wnd A szülő ablak
-        :param connecting_data_setter Az űrlap feldolgozásának végén meghívandó függvény, mely továbbítja az adatokat
+        Parameters:
+            root_wnd: Tk
+                Tkinter application reference.
+            connecting_data_setter: function
+                The function to be called when some kind of connection has been started
         """
         super().__init__(root_wnd, "KSAgent Start", on_close)
         self.assets_to_save = []
@@ -229,14 +260,15 @@ class WelcomeScreen(Screen):
         self.baud_field = EditableLabel(self.inspector_frame, "Baud rate:", self.devices[self.current_device].baud,
                                         lambda val, _: self.modify_device_field("baud", val))
         self.baud_field.pack()
-        self.mag_bias = MatrixEntryField(self.inspector_frame, "Magneto bias:",
-                                         (1, 3), self.devices[self.current_device].mag_bias,
-                                         lambda val: self.modify_device_field("mag_bias", val))
-        self.mag_bias.pack()
-        self.mag_scale = MatrixEntryField(self.inspector_frame, "Magneto scale:",
-                                          (3, 3), self.devices[self.current_device].mag_scale,
-                                          lambda val: self.modify_device_field("mag_scale", val))
-        self.mag_scale.pack()
+        self.switch_g = EditableLabel(self.inspector_frame, "Switch G Value:", self.devices[self.current_device].switch_g,
+                                        lambda val, _: self.modify_device_field("switch_g", val))
+        self.switch_g.pack()
+        self.gy91 = AccelerationEntry(self.inspector_frame, self.devices[self.current_device], "gy91",
+                                      lambda val: self.modify_device_field("gy91", val))
+        self.gy91.pack()
+        self.lis = AccelerationEntry(self.inspector_frame, self.devices[self.current_device], "lis",
+                                     lambda val: self.modify_device_field("lis", val))
+        self.lis.pack()
         self.inspector_frame.grid(row=0, column=1)
         self.form_root.pack()
 
@@ -245,8 +277,9 @@ class WelcomeScreen(Screen):
         self.name_field.set_value(device.name)
         self.port_field.set_value(device.port)
         self.baud_field.set_value(device.baud)
-        self.mag_bias.set_value(device.mag_bias)
-        self.mag_scale.set_value(device.mag_scale)
+        self.switch_g.set_value(device.switch_g)
+        self.gy91.set_device(device)
+        self.lis.set_device(device)
 
     def modify_device_field(self, field, value):
         if field == "name":
@@ -276,7 +309,8 @@ class WelcomeScreen(Screen):
         self.devices.insert(0, Device("Unknown Device", "", "", [], []))
         self.device_items.insert(0, DeviceItem(self.device_list_frame, self.devices[0],
                                                lambda dev: self.connect(dev), lambda dev: self.load_recording(dev),
-                                               lambda dev: self.update_inspector(dev), lambda dev: self.delete_device(dev)))
+                                               lambda dev: self.update_inspector(dev),
+                                               lambda dev: self.delete_device(dev)))
         self.__update_device_list()
 
     def delete_device(self, device):
