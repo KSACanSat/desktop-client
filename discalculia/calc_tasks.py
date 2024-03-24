@@ -67,3 +67,31 @@ class AccelerationCalibrationTask(Task):
             config = (self.device.lis if data[accl] >= self.__gy91_edge else self.device.gy91) if self.sensor == "combined" else self.device.__dict__[self.sensor]
             data[accl] = config["scale"] * data[accl] + config["bias"]
         return data
+
+
+class AccelerationAltitudeTask(Task):
+    """
+    Integrates acceleration to s on the specified axis.
+    Requirements: `LabelTask` and some calibration for acceleration
+    """
+
+    def __init__(self, time_label, acc_label, acc_alt_label):
+        """
+        Parameters:
+            time_label (str):
+                Label for the time field.
+            acc_label (str):
+                Label for the acceleration (only one axis)
+            acc_alt_label (str):
+                Label for the outputting altitude
+        """
+        self.time_label = time_label
+        self.acc_label = acc_label
+        self.acc_alt_label = acc_alt_label
+        self.last_acc = 0
+
+    def process(self, data):
+        alt = self.last_acc + 0.5 * data[self.acc_label] * data[self.time_label] ** 2
+        self.last_acc = data[self.acc_label]
+        data[self.acc_label] = alt
+        return data
