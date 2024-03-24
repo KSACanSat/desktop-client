@@ -54,7 +54,8 @@ class App(object):
             self.result.add_diagram(Diagram(1, 1, "Pressure", [0, 6]))
             self.discalculia.add_task(LabelTask(
                 ["id", "dt", "acc_x", "acc_y", "acc_z", "temp", "press", "lat", "lng"]))
-            self.discalculia.add_task(PressureAltCalcTask("press", "temp", "alt"))
+            self.discalculia.add_task(AccelerationCalibrationTask(data["device"], ["acc_x", "acc_y", "acc_z"], "combined"))
+            self.discalculia.add_task(PressureAltCalcTask("press", "alt"))
         elif data["type"] == "recording":
             self.raw_window.disable_saving()
             self.raw_window.update_table_columns(["Counter", "Timestamp", "GY-91 X", "GY-91 Y", "GY-91 Z", "LIS X", "LIS Y", "LIS Z",
@@ -68,7 +69,9 @@ class App(object):
             self.discalculia.add_task(LabelTask(
                 ["id", "time", "gy91_x", "gy91_y", "gy91_z", "lis_x", "lis_y", "lis_z",
                  "mag_x", "mag_y", "mag_z", "gyro_x", "gyro_y", "gyro_z", "temp", "press", "lat", "lng"]))
-            self.discalculia.add_task(PressureAltCalcTask("press", "temp", "alt"))
+            self.discalculia.add_task(AccelerationCalibrationTask(data["device"], ["gy91_x", "gy91_y", "gy91_z"], "gy91"))
+            self.discalculia.add_task(AccelerationCalibrationTask(data["device"], ["lis_x", "lis_y", "lis_z"], "lis"))
+            self.discalculia.add_task(PressureAltCalcTask("press", "alt"))
             self.stream_setter({"stream": FileStream(data["path"]), "device": data["device"]})
 
     def stream_setter(self, stream_data):
