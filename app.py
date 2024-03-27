@@ -45,6 +45,7 @@ class App(object):
                     - "device": Device - the selected device object
         """
         if data["type"] == "serial":
+            # Live
             self.connect_window.set_data(data["device"])
             self.connect_window.show()
             self.raw_window.update_table_columns(["Counter", "Delta Time", "Acc X", "Acc Y", "Acc Z", "Temp", "Press", "Lat", "Lng"])
@@ -58,6 +59,7 @@ class App(object):
             self.discalculia.add_task(PressureAltCalcTask("press", "pressure_alt"))
             self.discalculia.add_task(AccelerationAltitudeTask("dt", "acc_z", "acc_alt"))
         elif data["type"] == "recording":
+            # SD
             self.raw_window.disable_saving()
             self.raw_window.update_table_columns(["Counter", "Timestamp", "GY-91 X", "GY-91 Y", "GY-91 Z", "LIS X", "LIS Y", "LIS Z",
                                                   "mag X", "mag Y", "mag Z", "gyro X", "gyro Y", "gyro Z", "Temp" "Press", "Lat", "Lng"])
