@@ -303,20 +303,24 @@ class KalmanFilterForHeight(Task):
         return data
 
 class AccelerationAltitudeTask2(Task):
-    def __init__(self, time_label, accZ, height2, exHeight):
+    def __init__(self, time_label, accZ, exHeight):
         self.time_label = time_label
         self.accZ = accZ
         self.height2 = 0
         self.v = 0
         self.last_acc = 0
         self.exHeight = exHeight
+        self.State = np.matrix([[0],
+                                [0]])
 
     def process(self, data):
         dt = data[self.time_label]
-        self.height2 += self.v*dt + 0.25*(data[self.accZ] + self.last_acc)*dt**2
-        self.v += 0.5*(data[self.accZ] + data[self.accZ])*dt
-        self.last_acc = data[self.accZ]
-        data[self.exHeight] = self.height2
-        return data
+        accZ = data[self.accZ]
 
+        A = np.matrix([[1, dt],
+                       [0, 1]])
+        B = np.matrix([[dt * dt / 2], [dt]])
+        self.State = A @ self.State + B * accZ
+        data[self.exHeight] = self.State[0, 0]
+        return data
 
