@@ -53,6 +53,7 @@ class App(object):
             self.result.add_diagram(MultiPlotDiagram(0, 0, "Acceleration", ["time", "acc_x", "acc_y", "acc_z"]))
             self.result.add_diagram(Diagram(0, 1, "Altitude", ["time", "press_alt"]))
             self.result.add_diagram(Diagram(1, 1, "GPS Altitude", ["time", "gps_alt"]))
+            self.result.add_diagram(Diagram(2, 1, "Acc Altitude", ["time", "acc_alt"]))
             self.result.add_diagram(Diagram(1, 0, "Temperature", ["time", "temp"]))
             self.result.add_diagram(Diagram(2, 0, "Pressure", ["time", "press"]))
             self.discalculia.add_task(LabelTask(
@@ -60,7 +61,7 @@ class App(object):
             self.discalculia.add_task(ActualTimeCalcTask("dt", "time"))
             self.discalculia.add_task(DataConversionTask([("temp", 100), ("lat", 10000), ("lng", 10000)]))
             self.discalculia.add_task(AccelerationCalibrationTask(device, ["acc_x", "acc_y", "acc_z"], "combined"))
-            self.discalculia.add_task(PressureAltCalcTask("press", "press_alt"))
+            self.discalculia.add_task(PressureAltCalcTask("press", "temp" ,"press_alt"))
             self.discalculia.add_task(AccelerationAltitudeTask("time", "acc_z", "acc_alt"))
             self.discalculia.add_task(GPSAltFiller("gps_alt"))
         elif stream.get_type == "recording":

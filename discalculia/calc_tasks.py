@@ -94,9 +94,12 @@ class AccelerationAltitudeTask(Task):
         self.acc_label = acc_label
         self.acc_alt_label = acc_alt_label
         self.last_acc = 0
+        self.alt = 0
+        self.v = 0
 
     def process(self, data):
-        j = (data[self.acc_label] - data[self.acc_label-1] )/ data[self.time_label]
+        j = (data[self.acc_label] - self.last_acc )/ data[self.time_label]
+        self.v += data[self.acc_label]*data[self.time_label]
         self.alt += self.v*data[self.time_label] + 0.5*data[self.acc_label]*data[self.time_label]**2 + 1/6*j*data[self.time_label]**3
         self.last_acc = data[self.acc_label]
         data[self.acc_alt_label] = self.alt
