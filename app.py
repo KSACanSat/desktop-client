@@ -62,7 +62,7 @@ class App(object):
             self.discalculia.add_task(DataConversionTask([("temp", 100), ("lat", 10000), ("lng", 10000)]))
             self.discalculia.add_task(AccelerationCalibrationTask(device, ["acc_x", "acc_y", "acc_z"], "combined"))
             self.discalculia.add_task(PressureAltCalcTask("press", "temp" ,"press_alt"))
-            self.discalculia.add_task(AccelerationAltitudeTask("time", "acc_z", "acc_alt"))
+            self.discalculia.add_task(AccelerationAltitudeTask("dt", "acc_z", "acc_alt"))
             self.discalculia.add_task(GPSAltFiller("gps_alt"))
         elif stream.get_type == "recording":
             # SD

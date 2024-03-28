@@ -59,7 +59,7 @@ class AccelerationCalibrationTask(Task):
         self.device = device
         self.acc_labels = acc_labels
         self.sensor = sensor
-        self.__gy91_edge = self.__get_raw_value(7, "gy91") if self.sensor == "combined" else float("-inf")
+        self.__gy91_edge = 31800 if self.sensor == "combined" else float("-inf")
         if self.sensor not in ["gy91", "lis", "combined"]:
             raise ValueError("Sensor can only be gy-91, lis or combined")
 
@@ -71,6 +71,8 @@ class AccelerationCalibrationTask(Task):
         for accl in self.acc_labels:
             config = (self.device.lis if data[accl] >= self.__gy91_edge else self.device.gy91) if self.sensor == "combined" else self.device.__dict__[self.sensor]
             data[accl] = config["scale"] * data[accl] + config["bias"]
+            if "z" in accl:
+                data[accl] -= 9.8
         return data
 
 
@@ -98,9 +100,10 @@ class AccelerationAltitudeTask(Task):
         self.v = 0
 
     def process(self, data):
-        j = (data[self.acc_label] - self.last_acc )/ data[self.time_label]
-        self.v += data[self.acc_label]*data[self.time_label]
-        self.alt += self.v*data[self.time_label] + 0.5*data[self.acc_label]*data[self.time_label]**2 + 1/6*j*data[self.time_label]**3
+        sec_time = data[self.time_label] / 1000
+        j = (data[self.acc_label] - self.last_acc) / sec_time
+        self.alt += self.v*sec_time + 0.5*data[self.acc_label]*sec_time**2 + 1/6*j*sec_time**3
+        self.v += data[self.acc_label] * sec_time
         self.last_acc = data[self.acc_label]
         data[self.acc_alt_label] = self.alt
         return data
