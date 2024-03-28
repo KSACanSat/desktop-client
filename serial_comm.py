@@ -97,7 +97,8 @@ class SerialStream(Stream):
         if not self.info:
             sleep(0.2)
             return self.get_message()
-        packet = self.info.replace("'", "").replace("\\r\\n", "").replace("\\t", "\t")[1:]
+        packet = (self.info.replace("'", "").replace("\\r\\n", "")
+                  .replace("\\t", "\t").replace("b", ""))
         regex = ''.join(self.rex.findall(packet))
         if regex != packet:
             print("Corrupted packet:", packet)
