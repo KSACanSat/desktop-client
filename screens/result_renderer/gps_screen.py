@@ -94,6 +94,8 @@ class GPSScreen(Screen):
 
     def add_result(self, packet):
         packet_length = len(packet)
+        if packet[packet_length - 1] is None or packet[packet_length - 2] is None:
+            return
         self.websocket_server.send(" ".join([str(data) for data in [packet[0], packet[packet_length-2], packet[packet_length-1]]]))
 
     def hide(self):

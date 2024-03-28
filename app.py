@@ -55,6 +55,7 @@ class App(object):
             self.result.add_diagram(Diagram(1, 1, "Pressure", [0, 6]))
             self.discalculia.add_task(LabelTask(
                 ["id", "dt", "acc_x", "acc_y", "acc_z", "temp", "press", "lat", "lng"]))
+            self.discalculia.add_task(DataConversionTask([("temp", 100), ("lat", 10000), ("lng", 10000)]))
             self.discalculia.add_task(AccelerationCalibrationTask(device, ["acc_x", "acc_y", "acc_z"], "combined"))
             self.discalculia.add_task(PressureAltCalcTask("press", "pressure_alt"))
             self.discalculia.add_task(AccelerationAltitudeTask("dt", "acc_z", "acc_alt"))
@@ -72,6 +73,7 @@ class App(object):
             self.discalculia.add_task(LabelTask(
                 ["id", "time", "gy91_x", "gy91_y", "gy91_z", "lis_x", "lis_y", "lis_z",
                  "mag_x", "mag_y", "mag_z", "gyro_x", "gyro_y", "gyro_z", "temp", "press", "lat", "lng"]))
+            self.discalculia.add_task(DataConversionTask([("temp", 100), ("lat", 10000), ("lng", 10000)]))
             self.discalculia.add_task(AccelerationCalibrationTask(device, ["gy91_x", "gy91_y", "gy91_z"], "gy91"))
             self.discalculia.add_task(AccelerationCalibrationTask(device, ["lis_x", "lis_y", "lis_z"], "lis"))
             self.discalculia.add_task(PressureAltCalcTask("press", "press_alt"))
@@ -112,7 +114,6 @@ class App(object):
         message = self.io.get_message()
         if message[0] != self.last_time:
             self.raw_window.add_row(message)
-            self.gps.add_result(message)
             self.discalculia.process_packet(message)
             self.last_time = message[0]
         self.schedule_window.after(200 if self.io.stream.get_type == "serial" else 20, self.query_packets)
@@ -123,7 +124,7 @@ class App(object):
         """
         for results in self.discalculia.get_done_packets():
             self.result.add_result([val for val in results.values()])
-            pass
+            self.gps.add_result([val for val in results.values()])
         self.schedule_window.after(20, self.query_results)
 
     def show(self):
