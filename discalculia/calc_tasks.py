@@ -47,15 +47,15 @@ class AccelerationCalibrationTask(Task):
             acc_labels: list[str]
                 List of labels where we store nature arduino acceleration
             sensor: str
-                Can be "gy-91", "lis" or "combined" (other values will raise and error)
+                Can be "gy91", "lis" or "combined" (other values will raise and error)
                 In the first two cases we'll use the selected sensor's config data everywhere, otherwise
                 we switch between gy-91 and lis config data at `device.switch_g`.
         """
         self.device = device
         self.acc_labels = acc_labels
         self.sensor = sensor
-        self.__gy91_edge = self.__get_raw_value(7, "gy-91") if self.sensor == "combined" else float("-inf")
-        if self.sensor not in ["gy-91", "lis", "combined"]:
+        self.__gy91_edge = self.__get_raw_value(7, "gy91") if self.sensor == "combined" else float("-inf")
+        if self.sensor not in ["gy91", "lis", "combined"]:
             raise ValueError("Sensor can only be gy-91, lis or combined")
 
     def __get_raw_value(self, real_val, sensor=None):
@@ -85,13 +85,13 @@ class AccelerationAltitudeTask(Task):
             acc_alt_label (str):
                 Label for the outputting altitude
         """
-        self.time_label = time_label
+        self.delta_time_label = time_label
         self.acc_label = acc_label
         self.acc_alt_label = acc_alt_label
         self.last_acc = 0
 
     def process(self, data):
-        alt = self.last_acc + 0.5 * data[self.acc_label] * data[self.time_label] ** 2
+        alt = 0.5 * data[self.acc_label] * data[self.delta_time_label] ** 2
         self.last_acc = data[self.acc_label]
-        data[self.acc_label] = alt
+        data[self.acc_alt_label] = alt
         return data

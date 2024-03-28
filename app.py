@@ -50,28 +50,31 @@ class App(object):
             self.connect_window.show()
             self.raw_window.update_table_columns(["Counter", "Delta Time", "Acc X", "Acc Y",
                                                   "Acc Z", "Temp", "Press", "Lat", "Lng", "GPS Alt", "RSSI"])
-            self.result.add_diagram(MultiPlotDiagram(0, 0, "Acceleration", [0, 2, 3, 4]))
-            self.result.add_diagram(MultiPlotDiagram(0, 1, "Altitude", [0, -4, -2, -1]))
-            self.result.add_diagram(Diagram(1, 0, "Temperature", [0, 5]))
-            self.result.add_diagram(Diagram(1, 1, "Pressure", [0, 6]))
+            self.result.add_diagram(MultiPlotDiagram(0, 0, "Acceleration", ["time", "acc_x", "acc_y", "acc_z"]))
+            self.result.add_diagram(Diagram(0, 1, "Altitude", ["time", "press_alt"]))
+            self.result.add_diagram(Diagram(1, 1, "GPS Altitude", ["time", "gps_alt"]))
+            self.result.add_diagram(Diagram(1, 0, "Temperature", ["time", "temp"]))
+            self.result.add_diagram(Diagram(2, 0, "Pressure", ["time", "press"]))
             self.discalculia.add_task(LabelTask(
                 ["id", "dt", "acc_x", "acc_y", "acc_z", "temp", "press", "lat", "lng", "gps_alt", "rssi"]))
+            self.discalculia.add_task(ActualTimeCalcTask("dt", "time"))
             self.discalculia.add_task(DataConversionTask([("temp", 100), ("lat", 10000), ("lng", 10000)]))
             self.discalculia.add_task(AccelerationCalibrationTask(device, ["acc_x", "acc_y", "acc_z"], "combined"))
-            self.discalculia.add_task(PressureAltCalcTask("press", "pressure_alt"))
-            self.discalculia.add_task(AccelerationAltitudeTask("dt", "acc_z", "acc_alt"))
+            self.discalculia.add_task(PressureAltCalcTask("press", "press_alt"))
+            self.discalculia.add_task(AccelerationAltitudeTask("time", "acc_z", "acc_alt"))
+            self.discalculia.add_task(GPSAltFiller("gps_alt"))
         elif stream.get_type == "recording":
             # SD
             self.raw_window.disable_saving()
             self.raw_window.update_table_columns(["Counter", "Timestamp", "GY-91 X", "GY-91 Y", "GY-91 Z", "LIS X", "LIS Y", "LIS Z",
                                                   "mag X", "mag Y", "mag Z", "gyro X", "gyro Y", "gyro Z", "Temp" "Press",
                                                   "Lat", "Lng", "GPS Alt"])
-            self.result.add_diagram(MultiPlotDiagram(0, 0, "Acceleration", [0, 2, 3, 4, 5, 6, 7]))
-            self.result.add_diagram(MultiPlotDiagram(0, 0, "Magnetometer", [0, 8, 9, 10]))
-            self.result.add_diagram(MultiPlotDiagram(0, 0, "Gyroscope", [0, 11, 12, 13]))
-            self.result.add_diagram(Diagram(0, 1, "Temperature", [0, 14]))
-            self.result.add_diagram(Diagram(1, 1, "Pressure", [0, 15]))
-            self.result.add_diagram(MultiPlotDiagram(1, 1, "Altitude", [0, -4, -2, -1]))
+            self.result.add_diagram(MultiPlotDiagram(0, 0, "Acceleration", ["time", "gy91_x", "gy91_y", "gy91_z", "lis_x", "lis_y", "lis_z"]))
+            self.result.add_diagram(MultiPlotDiagram(0, 0, "Magnetometer", ["time", "mag_x", "mag_y", "mag_z"]))
+            self.result.add_diagram(MultiPlotDiagram(0, 0, "Gyroscope", ["time", "gyro_x", "gyro_y", "gyro_z"]))
+            self.result.add_diagram(Diagram(0, 1, "Temperature", ["time", "temp"]))
+            self.result.add_diagram(Diagram(1, 1, "Pressure", ["time", "press"]))
+            self.result.add_diagram(MultiPlotDiagram(1, 1, "Altitude", ["time", "press_alt"]))
             self.discalculia.add_task(LabelTask(
                 ["id", "time", "gy91_x", "gy91_y", "gy91_z", "lis_x", "lis_y", "lis_z",
                  "mag_x", "mag_y", "mag_z", "gyro_x", "gyro_y", "gyro_z", "temp", "press", "lat", "lng", "gps_alt"]))
@@ -118,15 +121,19 @@ class App(object):
             self.raw_window.add_row(message)
             self.discalculia.process_packet(message)
             self.last_time = message[0]
-        self.schedule_window.after(200 if self.io.stream.get_type == "serial" else 20, self.query_packets)
+        self.schedule_window.after(20 if self.io.stream.get_type == "serial" else 20, self.query_packets)
 
     def query_results(self):
         """
         Handles the done discalculia tasks.
         """
-        for results in self.discalculia.get_done_packets():
-            self.result.add_result([val for val in results.values()])
-            self.gps.add_result([val for val in results.values()])
+        done_packets = self.discalculia.get_done_packets()
+        if done_packets is None or done_packets == [None]:
+            self.schedule_window.after(20, self.query_results)
+            return
+        for results in done_packets:
+            self.result.add_result(results)
+            self.gps.add_result(results)
         self.schedule_window.after(20, self.query_results)
 
     def show(self):

@@ -93,10 +93,9 @@ class GPSScreen(Screen):
         webbrowser.open("http://localhost:5000/start")
 
     def add_result(self, packet):
-        packet_length = len(packet)
-        if packet[packet_length - 1] is None or packet[packet_length - 2] is None:
+        if packet["lat"] is None or packet["lng"] is None:
             return
-        self.websocket_server.send(" ".join([str(data) for data in [packet[0], packet[packet_length-2], packet[packet_length-1]]]))
+        self.websocket_server.send(" ".join([str(data) for data in [packet["lat"], packet["lng"]]]))
 
     def hide(self):
         self.visible = False

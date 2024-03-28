@@ -75,7 +75,7 @@ class Discalculia:
         return self.tasks[idx] if len(self.tasks) > idx else None
 
     def on_process_finished(self, thread, final_packet):
-        del self.running_threads[thread.thread_id]
+        self.running_threads.remove(thread)
         if len(self.threads) > 0:
             self.running_threads.append(self.threads[0])
             self.running_threads[-1].start()
