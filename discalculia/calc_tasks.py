@@ -4,7 +4,7 @@ All the calculation tasks.
 
 from discalculia.tasks import Task, LabelTask
 import numpy as np
-import math
+from math import acos, sqrt
 
 
 class PressureAltCalcTask(Task):
@@ -101,15 +101,59 @@ class AccelerationAltitudeTask(Task):
 
 
 class calc_magnetoAnglesTask(Task):
-    def __init__(self, magnetoX_label, magnetoY_label, magnetoZ_label):
+    def __init__(self, magnetoX_label, magnetoY_label, magnetoZ_label, data):
         self.magnetoX = magnetoX_label
         self.magnetoY = magnetoY_label
-        self.magnetoz = magnetoZ_label
+        self.magnetoZ = magnetoZ_label
+
+        self.refMtx = np.matrix([data[magnetoX_label], data[magnetoY_label], data[magnetoZ_label]])
+        self.resultMtx = np.matrix([0, 0, 0])
+        self.Angles = np.matrix([0, 0, 0])
+        self.CMtx = np.matrix([[1182118E-6, -6712E-6, 14143E-6],
+                                [-6712E-6, 1156626E-6, 68910E-6],
+                                [14143E-6, 68910E-6, 976695E-6]])
+        self.BMtx = np.matrix([60916249E-6, 15065507E-6, -46001035E-6])
+
+    def process(self, data):
+        self.magnetoX = data[self.magnetoX] - self.BMtx[0]
+        self.magnetoY = data[self.magnetoY] - self.BMtx[1]
+        self.magnetoZ = data[self.magnetoZ] - self.BMtx[2]
+
+        self.resultMtx[0] = self.magnetoX * self.CMtx[0][0] + self.magnetoY * self.CMtx[1][0] + self.magnetoZ * self.CMtx[2][0]
+        self.resultMtx[1] = self.magnetoX * self.CMtx[0][1] + self.magnetoY * self.CMtx[1][1] + self.magnetoZ * self.CMtx[2][1]
+        self.resultMtx[2] = self.magnetoX * self.CMtx[0][2] + self.magnetoY * self.CMtx[1][2] + self.magnetoZ * self.CMtx[2][2]
+
+
+        self.Angles[0] = acos((self.refMtx[0] * self.resultMtx[0] + self.refMtx[1] * self.resultMtx[1]) / (
+                    sqrt((self.refMtx[0])**2 + (self.refMtx[1])**2) *
+                    sqrt((self.resultMtx[0])**2 + (self.resultMtx[1])**2))) * 180 / 3.1416
+
+        if (self.resultMtx[1] < (self.resultMtx[0] * (self.refMtx[1] / self.refMtx[0]))) :
+            self.Angles[0] = self.Angles[0] * -1
+
+        self.Angles[1] = acos((self.refMtx[1] * self.resultMtx[1] + self.refMtx[2] * self.resultMtx[2]) / (
+                    sqrt((self.refMtx[1])**2 + (self.refMtx[2])**2) *
+                    sqrt((self.resultMtx[1])**2 + (self.resultMtx[2])**2))) * 180 / 3.1416
+
+        if (self.resultMtx[2] < (self.resultMtx[1] * (self.refMtx[2] / self.refMtx[1]))):
+            self.Angles[1] = self.Angles[1] * -1
+
+        self.Angles[2] = acos((self.refMtx[2] * self.resultMtx[2] + self.refMtx[0] * self.resultMtx[0]) / (
+                    sqrt((self.refMtx[2])**2 + (self.refMtx[0])**2) *
+                    sqrt((self.resultMtx[2])**2 + (self.resultMtx[0])**2))) * 180 / 3.1416
+
+        if (self.resultMtx[0] < (self.resultMtx[2] * (self.refMtx[0] / self.refMtx[2]))):
+            self.Angles[2] = self.Angles[2] * -1
+
+        data[self.magnetoX] = self.Angles[0]
+        data[self.magnetoY] = self.Angles[1]
+        data[self.magnetoZ] = self.Angles[2]
+        return data
 
 
 class KalmanFilterAngleTask(Task):
     def __init__(self, time_label, gyro_labelX, gyro_labelY, gyro_labelZ, magneto_labelX, magneto_labelY,
-                 magneto_labelZ, prevAngle_labelX, prevAngle_labelY, prevAngle_labelZ):
+                 magneto_labelZ):
         self.time_label = time_label
         self.gyroX = gyro_labelX
         self.gyroY = gyro_labelY
@@ -119,9 +163,6 @@ class KalmanFilterAngleTask(Task):
         self.magneto_labelY = magneto_labelY
         self.magneto_labelZ = magneto_labelZ
 
-        self.angle_labelX = prevAngle_labelX
-        self.angle_labelY = prevAngle_labelY
-        self.angle_labelZ = prevAngle_labelZ
 
         self.AngleX = 0
         self.AngleY = 0
@@ -175,4 +216,3 @@ class KalmanFilterAngleTask(Task):
         self.errorZ = (1 - KGZ) * self.errorZ
 
         return data
-
