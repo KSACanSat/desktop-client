@@ -19,4 +19,4 @@ All classes are subclasses of the base `Task` interface which provides abstract 
 from discalculia.discalculia import Discalculia
 from discalculia.tasks import LabelTask, DataConversionTask, ActualTimeCalcTask, GPSAltFiller
 from discalculia.calc_tasks import (PressureAltCalcTask, AccelerationCalibrationTask, AccelerationAltitudeTask,
-                                    calc_magnetoAnglesTask, KalmanFilterAngleTask, KalmanFilterForHeight)
+                                    calc_magnetoAnglesTask, KalmanFilterAngleTask, KalmanFilterForHeight, AccelerationAltitudeTask2)
