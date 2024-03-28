@@ -70,7 +70,7 @@ class AccelerationCalibrationTask(Task):
     def process(self, data):
         for accl in self.acc_labels:
             config = (self.device.lis if data[accl] >= self.__gy91_edge else self.device.gy91) if self.sensor == "combined" else self.device.__dict__[self.sensor]
-            data[accl] = config["scale"] * data[accl] + config["bias"]
+            data[accl] = round(config["scale"] * data[accl] + config["bias"], 1)
             if "z" in accl:
                 data[accl] -= 9.8
         return data
