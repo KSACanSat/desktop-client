@@ -1,9 +1,9 @@
-from collections import deque
 from tkinter import Frame, constants, CENTER, Button, StringVar, filedialog, Canvas, Entry, LabelFrame
 from tkinter.ttk import Label, Progressbar, Scrollbar
 from tkinter.messagebox import showerror
 from screens.screen import Screen, MenuItem
 from serial_comm import SerialStream, UnsupportedProtocolError
+from io_manager import FileStream
 from PIL.ImageTk import PhotoImage
 from PIL import Image
 from serial.serialutil import SerialException
@@ -325,16 +325,17 @@ class WelcomeScreen(Screen):
         Formats data for app
         """
         # pass params
-        self.connecting_data_setter({"type": "serial", "device": device})
+        self.connecting_data_setter(SerialStream(device), device)
 
     def load_recording(self, device):
-        path = filedialog.askopenfilename(defaultextension="*.txt", filetypes=[("Plain Recording", "*.txt")],
+        path = filedialog.askopenfilename(defaultextension="*.txt",
+                                          filetypes=[("SD Recording", "*.txt"), ("Serial Log", "*.record")],
                                           title="Open a recording", parent=self.root)
         import os
         if not os.path.isfile(path):
             showerror("Error!", "Bad path! (Not a file)")
             return
-        self.connecting_data_setter({"type": "recording", "path": path, "device": device})
+        self.connecting_data_setter(FileStream(path) if path.endswith(".txt") else FileStream(path, "serial"), device)
 
 
 class ConnectingScreen(Screen):
@@ -350,8 +351,8 @@ class ConnectingScreen(Screen):
         :param on_device_passes Az ellenőrzésen átment kapcsolatot fogadó függvény
         """
         super().__init__(root_wnd, "Connecting...")
-        self.device = None
         self.serial_conn = None
+        self.device = None
         self.completed_responses = 0
         self.on_device_passes = on_device_passes
         # UI INIT
@@ -362,15 +363,23 @@ class ConnectingScreen(Screen):
         self.progressbar = Progressbar(self.root, orient="horizontal", mode="indeterminate", length=180)
         self.progressbar.pack(anchor=CENTER, pady=10)
 
-    def set_data(self, device):
+    def set_data(self, stream, device):
         """
         Receives a device and checks if it is connected
-        :param device The serial device object
+        Parameters:
+            stream: Stream
+                The serial stream object
+            device: Device
+                The configuration object to pass back
         """
+        self.serial_conn = stream
         self.device = device
-        self.title_text.set(f"Csatlakozás a {self.device.port} port eszközéhez...")
-        self.progressbar.start()
-        self.query_device()
+        if self.serial_conn is SerialStream:
+            self.title_text.set(f"Csatlakozás a {self.device.port} porton levő eszközhöz...")
+            self.progressbar.start()
+            self.query_device()
+        else:
+            self.__success(False)
 
     def query_device(self):
         """
@@ -380,9 +389,6 @@ class ConnectingScreen(Screen):
         """
         is_error = False
         try:
-            # Inits the serial connection
-            if self.serial_conn is None:
-                self.serial_conn = SerialStream(self.device)
             # Query for data
             self.serial_conn.get_message()
             self.completed_responses += 1
@@ -397,11 +403,15 @@ class ConnectingScreen(Screen):
             is_error = True
         # Error and finish handling
         if is_error or self.completed_responses == 5:
-            # Hiding the window
-            self.progressbar.stop()
-            self.hide()
-            # In case of success send over the connection
-            if not is_error:
-                self.on_device_passes({"stream": self.serial_conn, "device": self.device})
+            self.__success(is_error)
             return  # Stop the test
         self.root.after(200, self.query_device)  # Schedule the next test
+
+    def __success(self, is_error):
+        # Hiding the window
+        self.progressbar.stop()
+        self.hide()
+        # In case of success send over the connection
+        if not is_error:
+            self.on_device_passes(self.serial_conn, self.device)
+

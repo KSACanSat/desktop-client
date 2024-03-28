@@ -106,6 +106,7 @@ class SerialStream(Stream):
             return self.get_message()
         return packet
 
+    @property
     def get_type(self):
         return "serial"
 

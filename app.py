@@ -35,18 +35,18 @@ class App(object):
         self.discalculia = Discalculia()
         self.gps = GPSScreen(self.schedule_window)
 
-    def connection_data_handler(self, data):
+    def connection_data_handler(self, stream, device):
         """
         Handles the result of `WelcomeScreen`
         Parameters:
-            data: dict
-                The dict with all the needed (and optional) params which are:
-                    - "type": str - can be serial or recording based on the creating stream
-                    - "device": Device - the selected device object
+            device: Device
+                The configuration object which will be used further
+            stream: Stream
+                A subclass of stream which will provide data for us
         """
-        if data["type"] == "serial":
+        if stream.get_type == "serial":
             # Live
-            self.connect_window.set_data(data["device"])
+            self.connect_window.set_data(stream, device)
             self.connect_window.show()
             self.raw_window.update_table_columns(["Counter", "Delta Time", "Acc X", "Acc Y", "Acc Z", "Temp", "Press", "Lat", "Lng"])
             self.result.add_diagram(MultiPlotDiagram(0, 0, "Acceleration", [0, 2, 3, 4]))
@@ -55,10 +55,10 @@ class App(object):
             self.result.add_diagram(Diagram(1, 1, "Pressure", [0, 6]))
             self.discalculia.add_task(LabelTask(
                 ["id", "dt", "acc_x", "acc_y", "acc_z", "temp", "press", "lat", "lng"]))
-            self.discalculia.add_task(AccelerationCalibrationTask(data["device"], ["acc_x", "acc_y", "acc_z"], "combined"))
+            self.discalculia.add_task(AccelerationCalibrationTask(device, ["acc_x", "acc_y", "acc_z"], "combined"))
             self.discalculia.add_task(PressureAltCalcTask("press", "pressure_alt"))
             self.discalculia.add_task(AccelerationAltitudeTask("dt", "acc_z", "acc_alt"))
-        elif data["type"] == "recording":
+        elif stream.get_type == "recording":
             # SD
             self.raw_window.disable_saving()
             self.raw_window.update_table_columns(["Counter", "Timestamp", "GY-91 X", "GY-91 Y", "GY-91 Z", "LIS X", "LIS Y", "LIS Z",
@@ -72,20 +72,22 @@ class App(object):
             self.discalculia.add_task(LabelTask(
                 ["id", "time", "gy91_x", "gy91_y", "gy91_z", "lis_x", "lis_y", "lis_z",
                  "mag_x", "mag_y", "mag_z", "gyro_x", "gyro_y", "gyro_z", "temp", "press", "lat", "lng"]))
-            self.discalculia.add_task(AccelerationCalibrationTask(data["device"], ["gy91_x", "gy91_y", "gy91_z"], "gy91"))
-            self.discalculia.add_task(AccelerationCalibrationTask(data["device"], ["lis_x", "lis_y", "lis_z"], "lis"))
+            self.discalculia.add_task(AccelerationCalibrationTask(device, ["gy91_x", "gy91_y", "gy91_z"], "gy91"))
+            self.discalculia.add_task(AccelerationCalibrationTask(device, ["lis_x", "lis_y", "lis_z"], "lis"))
             self.discalculia.add_task(PressureAltCalcTask("press", "press_alt"))
             self.discalculia.add_task(AccelerationAltitudeTask("time", "lis_z", "acc_alt"))
-            self.stream_setter({"stream": FileStream(data["path"]), "device": data["device"]})
+            self.stream_setter(stream, device)
 
-    def stream_setter(self, stream_data):
+    def stream_setter(self, stream, device):
         """
         Sets the stream for IOManager and inits the "main" setup.
         Parameters:
-            stream_data: dict
-                The nature stream data to be passed to the IOManager
+            stream: Stream
+                The data source object
+            device: Device
+                The configuration object used for further calculations
         """
-        self.io.set_stream(stream_data)
+        self.io.set_stream(stream, device)
         self.welcome_window.hide()
         self.raw_window.show()
         self.result.show()

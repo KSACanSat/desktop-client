@@ -38,6 +38,6 @@ class RawInfoScreen(Screen):
         self.menu.entryconfig("File", state="disabled")
 
     def get_path(self):
-        path = filedialog.asksaveasfilename(parent=self.root, filetypes=[("Plain recording", "*.txt")],
-                                            title="Save recorded data", defaultextension=".txt")
+        path = filedialog.asksaveasfilename(parent=self.root, filetypes=[("Recording", "*.record")],
+                                            title="Save recorded data", defaultextension=".record")
         self.on_got_path(path)

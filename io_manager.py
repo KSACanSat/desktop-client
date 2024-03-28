@@ -8,7 +8,7 @@ class FileStream(Stream):
     Stream implementation for the recorded data stored in text files.
     :see: Stream
     """
-    def __init__(self, path):
+    def __init__(self, path, mode="recording"):
         """
         Parameters:
         -----------
@@ -16,12 +16,13 @@ class FileStream(Stream):
             Path to the text file
         """
         self.file = open(path, "r")
+        self.mode = mode
         self.content = []
         self.index = 0
 
     @property
     def get_type(self):
-        return "file"
+        return self.mode
 
     def get_message(self):
         """
@@ -47,15 +48,15 @@ class IOManager:
         self.device: Device = None
         self.file: _io.TextIOWrapper = None
 
-    def set_stream(self, data):
+    def set_stream(self, stream, device):
         """
         Activates the current stream object and device
         Parameters:
             data: dict
                 In this param you need to pass a stream as "stream" and a device as "device"
         """
-        self.stream = data["stream"]
-        self.device = data["device"]
+        self.stream = stream
+        self.device = device
 
     def set_path(self, path):
         """
