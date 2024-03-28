@@ -48,13 +48,14 @@ class App(object):
             # Live
             self.connect_window.set_data(stream, device)
             self.connect_window.show()
-            self.raw_window.update_table_columns(["Counter", "Delta Time", "Acc X", "Acc Y", "Acc Z", "Temp", "Press", "Lat", "Lng"])
+            self.raw_window.update_table_columns(["Counter", "Delta Time", "Acc X", "Acc Y",
+                                                  "Acc Z", "Temp", "Press", "Lat", "Lng", "GPS Alt", "RSSI"])
             self.result.add_diagram(MultiPlotDiagram(0, 0, "Acceleration", [0, 2, 3, 4]))
-            self.result.add_diagram(MultiPlotDiagram(0, 1, "Altitude", [0, -2, -1]))
+            self.result.add_diagram(MultiPlotDiagram(0, 1, "Altitude", [0, -4, -2, -1]))
             self.result.add_diagram(Diagram(1, 0, "Temperature", [0, 5]))
             self.result.add_diagram(Diagram(1, 1, "Pressure", [0, 6]))
             self.discalculia.add_task(LabelTask(
-                ["id", "dt", "acc_x", "acc_y", "acc_z", "temp", "press", "lat", "lng"]))
+                ["id", "dt", "acc_x", "acc_y", "acc_z", "temp", "press", "lat", "lng", "gps_alt", "rssi"]))
             self.discalculia.add_task(DataConversionTask([("temp", 100), ("lat", 10000), ("lng", 10000)]))
             self.discalculia.add_task(AccelerationCalibrationTask(device, ["acc_x", "acc_y", "acc_z"], "combined"))
             self.discalculia.add_task(PressureAltCalcTask("press", "pressure_alt"))
@@ -63,16 +64,17 @@ class App(object):
             # SD
             self.raw_window.disable_saving()
             self.raw_window.update_table_columns(["Counter", "Timestamp", "GY-91 X", "GY-91 Y", "GY-91 Z", "LIS X", "LIS Y", "LIS Z",
-                                                  "mag X", "mag Y", "mag Z", "gyro X", "gyro Y", "gyro Z", "Temp" "Press", "Lat", "Lng"])
+                                                  "mag X", "mag Y", "mag Z", "gyro X", "gyro Y", "gyro Z", "Temp" "Press",
+                                                  "Lat", "Lng", "GPS Alt"])
             self.result.add_diagram(MultiPlotDiagram(0, 0, "Acceleration", [0, 2, 3, 4, 5, 6, 7]))
             self.result.add_diagram(MultiPlotDiagram(0, 0, "Magnetometer", [0, 8, 9, 10]))
             self.result.add_diagram(MultiPlotDiagram(0, 0, "Gyroscope", [0, 11, 12, 13]))
             self.result.add_diagram(Diagram(0, 1, "Temperature", [0, 14]))
             self.result.add_diagram(Diagram(1, 1, "Pressure", [0, 15]))
-            self.result.add_diagram(MultiPlotDiagram(1, 1, "Altitude", [0, -2, -1]))
+            self.result.add_diagram(MultiPlotDiagram(1, 1, "Altitude", [0, -4, -2, -1]))
             self.discalculia.add_task(LabelTask(
                 ["id", "time", "gy91_x", "gy91_y", "gy91_z", "lis_x", "lis_y", "lis_z",
-                 "mag_x", "mag_y", "mag_z", "gyro_x", "gyro_y", "gyro_z", "temp", "press", "lat", "lng"]))
+                 "mag_x", "mag_y", "mag_z", "gyro_x", "gyro_y", "gyro_z", "temp", "press", "lat", "lng", "gps_alt"]))
             self.discalculia.add_task(DataConversionTask([("temp", 100), ("lat", 10000), ("lng", 10000)]))
             self.discalculia.add_task(AccelerationCalibrationTask(device, ["gy91_x", "gy91_y", "gy91_z"], "gy91"))
             self.discalculia.add_task(AccelerationCalibrationTask(device, ["lis_x", "lis_y", "lis_z"], "lis"))
