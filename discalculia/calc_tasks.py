@@ -4,7 +4,7 @@ All the calculation tasks.
 
 from discalculia.tasks import Task, LabelTask
 import numpy as np
-from math import acos, sqrt
+from math import acos, sqrt, sin, cos
 
 
 class PressureAltCalcTask(Task):
@@ -92,21 +92,26 @@ class AccelerationAltitudeTask(Task):
         self.acc_label = acc_label
         self.acc_alt_label = acc_alt_label
         self.last_acc = 0
+        self.alt = 0
 
     def process(self, data):
-        alt = self.last_acc + 0.5 * data[self.acc_label] * data[self.time_label] ** 2
+        j = (data[self.acc_label] - data[self.acc_label-1] )/ data[self.time_label]
+        self.alt += self.v*data[self.time_label] + 0.5*data[self.acc_label]*data[self.time_label]**2 + 1/6*j*data[self.time_label]**3
         self.last_acc = data[self.acc_label]
-        data[self.acc_label] = alt
+        data[self.acc_alt_label] = self.alt
         return data
 
 
 class calc_magnetoAnglesTask(Task):
-    def __init__(self, magnetoX_label, magnetoY_label, magnetoZ_label, data):
+    def __init__(self, magnetoX_label, magnetoY_label, magnetoZ_label, magnetoAngleX, magnetoAngleY, magnetoAngleZ):
         self.magnetoX = magnetoX_label
         self.magnetoY = magnetoY_label
         self.magnetoZ = magnetoZ_label
 
-        self.refMtx = np.matrix([data[magnetoX_label], data[magnetoY_label], data[magnetoZ_label]])
+        self.magnetoAngleX = magnetoAngleX
+        self.magnetoAngleY = magnetoAngleY
+        self.magnetoAngleZ = magnetoAngleZ
+
         self.resultMtx = np.matrix([0, 0, 0])
         self.Angles = np.matrix([0, 0, 0])
         self.CMtx = np.matrix([[1182118E-6, -6712E-6, 14143E-6],
@@ -115,6 +120,7 @@ class calc_magnetoAnglesTask(Task):
         self.BMtx = np.matrix([60916249E-6, 15065507E-6, -46001035E-6])
 
     def process(self, data):
+        self.refMtx = np.matrix([data[0], data[0], data[0]])
         self.magnetoX = data[self.magnetoX] - self.BMtx[0]
         self.magnetoY = data[self.magnetoY] - self.BMtx[1]
         self.magnetoZ = data[self.magnetoZ] - self.BMtx[2]
@@ -145,15 +151,15 @@ class calc_magnetoAnglesTask(Task):
         if (self.resultMtx[0] < (self.resultMtx[2] * (self.refMtx[0] / self.refMtx[2]))):
             self.Angles[2] = self.Angles[2] * -1
 
-        data[self.magnetoX] = self.Angles[0]
-        data[self.magnetoY] = self.Angles[1]
-        data[self.magnetoZ] = self.Angles[2]
+        data[self.magnetoAngleX] = self.Angles[0]
+        data[self.magnetoAngleY] = self.Angles[1]
+        data[self.magnetoAngleZ] = self.Angles[2]
         return data
 
 
 class KalmanFilterAngleTask(Task):
-    def __init__(self, time_label, gyro_labelX, gyro_labelY, gyro_labelZ, magneto_labelX, magneto_labelY,
-                 magneto_labelZ):
+    def __init__(self, time_label, gyro_labelX, gyro_labelY, gyro_labelZ, magneto_labelX, magneto_labelY, magneto_labelZ,
+                 KalmanAngleX, KalmanAngleY, KalmanAngleZ):
         self.time_label = time_label
         self.gyroX = gyro_labelX
         self.gyroY = gyro_labelY
@@ -162,6 +168,10 @@ class KalmanFilterAngleTask(Task):
         self.magneto_labelX = magneto_labelX
         self.magneto_labelY = magneto_labelY
         self.magneto_labelZ = magneto_labelZ
+
+        self.KalmanAngleX = KalmanAngleX
+        self.KalmanAngleY = KalmanAngleY
+        self.KalmanAngleZ = KalmanAngleZ
 
 
         self.AngleX = 0
@@ -193,26 +203,101 @@ class KalmanFilterAngleTask(Task):
 
     def process(self, data):
         #Magnetometer angles
-        self.dt = data[self.time_label]
+        dt = data[self.time_label]
 
-        self.estAngleX = self.AngleX + data[self.gyroX] * self.dt
-        self.estAngleY = self.AngleY + data[self.gyroY] * self.dt
-        self.estAngleZ = self.AngleZ + data[self.gyroZ] * self.dt
+        self.estAngleX = self.AngleX + data[self.gyroX] * dt
+        self.estAngleY = self.AngleY + data[self.gyroY] * dt
+        self.estAngleZ = self.AngleZ + data[self.gyroZ] * dt
 
-        self.errorX += 4 ** 2 * self.dt ** 2  # A gyroscope mérésének szórása(nem szórásnégyzete) a 4 fok helyett
-        self.errorY += 4 ** 2 * self.dt ** 2
-        self.errorZ += 4 ** 2 * self.dt ** 2
+        self.errorX += 4 ** 2 * dt ** 2  # A gyroscope mérésének szórása(nem szórásnégyzete) a 4 fok helyett
+        self.errorY += 4 ** 2 * dt ** 2
+        self.errorZ += 4 ** 2 * dt ** 2
 
         KGX = self.errorX / (self.errorX + self.magnetoErrorX ** 2)
         KGY = self.errorY / (self.errorY + self.magnetoErrorY ** 2)
         KGZ = self.errorZ / (self.errorZ + self.magnetoErrorZ ** 2)
 
-        data[self.gyroX] = (self.estAngleX + KGX * (self.magnetoAngleX - self.estAngleX))
-        data[self.gyroY] = (self.estAngleY + KGY * (self.magnetoAngleY - self.estAngleY))
-        data[self.gyroZ] = (self.estAngleZ + KGZ * (self.magnetoAngleZ - self.estAngleZ))
+        data[self.KalmanAngleX] = (self.estAngleX + KGX * (self.magnetoAngleX - self.estAngleX))
+        data[self.KalmanAngleY] = (self.estAngleY + KGY * (self.magnetoAngleY - self.estAngleY))
+        data[self.KalmanAngleZ] = (self.estAngleZ + KGZ * (self.magnetoAngleZ - self.estAngleZ))
 
         self.errorX = (1 - KGX) * self.errorX
         self.errorY = (1 - KGY) * self.errorY
         self.errorZ = (1 - KGZ) * self.errorZ
 
+        return data
+
+class KalmanFilterForHeight(Task):
+    def __init__(self, time_label, accX, accY, accZ, gyroX, gyroY, gyroZ, pressureHeight, KalmanHeight, KalmanVelocity):
+        self.accX = accX
+        self.accY = accY
+        self.accZ = accZ
+        self.gyroX = gyroX
+        self.gyroY = gyroY
+        self.gyroZ = gyroZ
+        self.pressureHeight = pressureHeight
+        self.KalmanHeight = KalmanHeight
+        self.KalmanVelocity = KalmanVelocity
+
+        self.time_label = time_label
+        self.PressureVelocity = 0
+        self.startState = np.matrix([[0], [0]])
+        self.Vver = 0
+        self.startCov = np.matrix([[0, 0],
+                                    [0, 0]])
+
+        self.State = self.startState
+        self.Pk = self.startCov
+        self.H = np.matrix([[1, 0]])
+        self.Ht = np.matrix([[1],
+                            [0]])
+        self.I = np.matrix([[1, 0],
+                            [0, 1]])
+
+        self.height = 0 # kezdeti magasság
+        self.velocity = 0
+        
+
+    def process(self, data):
+        dt = data[self.time_label]
+        x = data[self.accX]
+        y = data[self.accY]
+        z = data[self.accZ]
+
+        # ide jön még a Kalman filterezett szög
+        alfa = data[self.gyroX]
+        beta = data[self.gyroY]
+
+
+        Acc = -x * sin(beta) + y * sin(alfa) * cos(beta) + z * cos(alfa) * cos(beta)
+
+        A = np.matrix([[1, dt],
+                       [0, 1]])
+
+        AT = np.matrix([[1, 0],
+                        [dt, 1]])
+
+        B = np.matrix([[dt ** 2 / 2],
+                       [dt]])
+        BT = np.matrix([dt ** 2 / 2, dt])
+
+        estimation = A @ self.State + B * Acc
+
+        Y = np.matrix([data[self.pressureHeight],
+                       (data[self.pressureHeight] - data[self.pressureHeight-1]) / dt])
+
+        Q = B * BT * 100
+        """ ide jön a gyorsulásmérő szórásnégyzete(ennek kiszámításakor a bele kell számolni a szög 
+        hibáját)"""
+        Pkp = A @ self.Pk @ AT + Q
+
+        R = np.matrix([100])  # np.matrix([[data["Height1"].var()**2, 0], [0, 900]]) a nyomásból számolt magasság szórásnégyzete
+        L = self.H @ Pkp @ self.Ht + R
+        KG = Pkp @ self.Ht * 1 / L[0]
+        self.State = estimation + KG @ (Y - self.H @ estimation)
+        Pk = (self.I - KG @ self.H) @ Pkp
+        self.height = self.State[0, 0]
+        self.velocity = self.State[1, 0]
+        data[self.KalmanHeight] = self.height
+        data[self.KalmanVelocity] = self.velocity
         return data

@@ -18,4 +18,5 @@ All classes are subclasses of the base `Task` interface which provides abstract 
 
 from discalculia.discalculia import Discalculia
 from discalculia.tasks import LabelTask
-from discalculia.calc_tasks import PressureAltCalcTask, AccelerationCalibrationTask, AccelerationAltitudeTask #Kalman filter
+from discalculia.calc_tasks import (PressureAltCalcTask, AccelerationCalibrationTask, AccelerationAltitudeTask,
+                                    calc_magnetoAnglesTask, KalmanFilterAngleTask, KalmanFilterForHeight)
