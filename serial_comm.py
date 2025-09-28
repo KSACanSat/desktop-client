@@ -62,38 +62,43 @@ class UnsupportedProtocolError(IOError):
 
 class SerialStream(Stream):
     """
-    A soros kommunikációt kezelő UI-safe osztály
-    (olyan szintje a soros kommunikáció vezérlésének, ami nem blokkolja az ablakainkat)
+    Stream implementation for serial communication.
+    :see: Stream
     """
-    def __init__(self, port, baud_rate):
+    def __init__(self, device):
         """
-        :param port: Az OS által kirendelt soros port
-        :param baud_rate: A földi állomáson megadott baud rate
-
-        **TODO: Kapcsolódási hibák jelzése a UI szintjén (#2)**
+        Parameters
+        ----------
+        device: device.Device
+            The device to connect to
         """
-        self.conn = Serial(port, baud_rate)
-        self.thread = SerialThread(self.conn, self.data_receiver)
-        self.rex = re.compile("[0-9]|\t|\.|-")
+        self.conn = Serial(device.port, device.baud)
+        self.thread = SerialThread(self.conn, self.__data_receiver)
+        self.rex = re.compile(r"[0-9]|\t|\.|-")
         self.info = ""
 
-    def data_receiver(self, data: bytes):
+    def __data_receiver(self, data):
         """
-        A soros kommunikációs szál callbackja.
-        :param data: A `SerialThread` által beolvasott adat
+        Callback for `self.thread`
+        Parameters
+        ----------
+        data: bytearray
+            The unprocessed serial data
         """
         self.info = str(data)
 
     def get_message(self):
         """
-        A legutóbbi adat lekérdezése ami beérkezett a földi rádióállomásunkról
-        :return: A legutóbbi üzenet formázott változata
+        Fetch the latest data that we received from the serial port
+
+        :returns: The unformatted packet data as string
         """
         # Ha nincs üzenet, várakozás amíg nem jön egy (0.2 másodpercenként ellenőrzés)
         if not self.info:
             sleep(0.2)
             return self.get_message()
-        packet = self.info.replace("'", "").replace("\\r\\n", "").replace("\\t", "\t")[1:]
+        packet = (self.info.replace("'", "").replace("\\r\\n", "")
+                  .replace("\\t", "\t").replace("b", ""))
         regex = ''.join(self.rex.findall(packet))
         if regex != packet:
             print("Corrupted packet:", packet)
@@ -101,12 +106,13 @@ class SerialStream(Stream):
             return self.get_message()
         return packet
 
+    @property
     def get_type(self):
         return "serial"
 
     def stop(self):
         """
-        A soros kommunikáció leállítója
+        Closes the serial communication
         """
         self.thread.stop()
         self.conn.close()
