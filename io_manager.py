@@ -87,6 +87,7 @@ class IOManager:
         raw_pairs = raw_message.split("\t")
         return [float(raw_pair) if "\n" not in raw_pair and len(raw_pair) > 0 else 0.00 for raw_pair in raw_pairs]
 
+
     def stop(self):
         """
         Stops IO activity
